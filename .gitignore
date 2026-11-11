@@ -1,0 +1,35 @@
+# --- Secrets and local config: never commit ---
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+secrets/
+
+# --- OS and editor files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+
+# --- Dependencies, caches, build output ---
+node_modules/
+dist/
+build/
+.cache/
+.parcel-cache/
+.vercel/
+.netlify/
+
+# --- Logs ---
+*.log
+npm-debug.log*
+
+# --- Design source files ---
+*.psd
+*.ai
+*.sketch
+*.fig
