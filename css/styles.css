@@ -72,6 +72,7 @@ button{font:inherit;color:inherit}
 .hero .l1,.hero .l2{display:block;overflow:hidden;padding:.04em 0 .08em}
 .hero .l1>span,.hero .l2>span{display:inline-block;transform:translateY(105%);animation:up 1s var(--ease-honey) forwards}
 .hero .l2{text-align:right;font-style:italic}
+.hero .l2 .hl{background:var(--leaf);color:var(--cream-light);padding:.02em .18em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .hero .l2>span{animation-delay:.14s}
 @keyframes up{to{transform:none}}
 .jars{position:relative;z-index:2;display:flex;justify-content:center;align-items:flex-end;gap:clamp(.6rem,2vw,1.6rem);height:clamp(17rem,46vh,30rem);margin:-4.5vw 0 -5vw;pointer-events:none}
