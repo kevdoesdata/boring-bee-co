@@ -85,7 +85,7 @@ const A = 1.0;
 const H_TRACE = 2 * A / 0.545;
 const SH0 = 0.61 * H_TRACE, SH1 = 0.865 * H_TRACE, LID0 = 0.922 * H_TRACE;
 const SHOULDER_SQUASH = 1.0;    // shoulder exactly as traced (the approved shape)
-const NECK_SHOW = 0.08;         // clear neck between shoulder and lid: ~3.4mm, enough to show the glass lip under the cap
+const NECK_SHOW = 0.11;         // clear neck between shoulder and lid: ~4.6mm, room for a clear glass lip under the cap
 function squashY(y) {
   if (y <= SH0) return y;
   if (y <= SH1) return SH0 + (y - SH0) * SHOULDER_SQUASH;
@@ -109,8 +109,8 @@ const PROFILE_TRACE = [
   [0.110, 0.885], [0.140, 0.915], [0.180, 0.94], [0.220, 0.97], [0.280, 0.99],
   [0.320, 1.00], [0.480, 1.00], [0.530, 0.98], [0.570, 0.96], [0.610, 0.935],
   [0.650, 0.90], [0.690, 0.85], [0.730, 0.81], [0.775, 0.745], [0.815, 0.68],
-  [0.845, 0.62], [0.865, 0.578], [0.880, 0.565], [0.893, 0.566], [0.901, 0.588], [0.909, 0.598],
-  [0.916, 0.595], [0.921, 0.574], [0.940, 0.565], [0.960, 0.578],
+  [0.845, 0.62], [0.865, 0.578], [0.880, 0.565], [0.887, 0.567], [0.895, 0.592], [0.902, 0.614], [0.911, 0.62],
+  [0.917, 0.613], [0.921, 0.582], [0.940, 0.565], [0.960, 0.578],
   [0.975, 0.578], [0.990, 0.53], [1.000, 0.48]
 ];
 const PROFILE = PROFILE_TRACE.map(([t, w]) => [yT(t), w]);
@@ -208,7 +208,7 @@ function jarRings({ t0 = 0, t1 = 1, inset = 1, yBottom = 0, steps = 130, dome = 
     return new THREE.Vector3((p.x * scale) + p.nx * r, yOverride ?? t * H, (p.z * scale) + p.nz * r);
   };
   // the base: centre pushed up into the jar by `dome`, easing down to a resting ring near the edge
-  for (const [s, f] of [[0, 1], [0.3, 0.9], [0.55, 0.62], [0.75, 0.28], [0.88, 0.04], [0.94, 0]]) rings.push(ringAt(t0, s, yBottom + dome * f));
+  for (const [s, f] of [[0, 1], [0.3, 0.93], [0.52, 0.74], [0.7, 0.42], [0.82, 0.14], [0.89, 0.03], [0.95, 0]]) rings.push(ringAt(t0, s, yBottom + dome * f));
   const ts = [];
   for (let k = 0; k <= steps; k++) ts.push(t0 + (t1 - t0) * (k / steps));
   for (let t = yT(0.86); t < yT(0.93); t += 0.004 / H) if (t > t0 && t < t1) ts.push(t);   // the neck lip needs fine rings
@@ -467,7 +467,7 @@ labelBackMat.onBeforeCompile = (sh) => {
 
 // shared geometry
 const HONEY_T0 = 0.02, HONEY_T1 = 0.985;   // a thicker clear glass floor under the honey, as in the photos
-const BASE_DOME = 0.07;                   // push-up: the base rises ~3mm into the jar at the centre
+const BASE_DOME = 0.13;                   // push-up: the base rises ~5.5mm into the jar at the centre
 const glassGeo = buildRingSurface(jarRings({ dome: BASE_DOME }), 160);
 const honeyGeo = buildRingSurface(jarRings({ t0: HONEY_T0, t1: HONEY_T1, inset: GLASS_IN, yBottom: HONEY_T0 * H, dome: BASE_DOME }), 160);
 const labelGeo = labelGeometry();
@@ -1001,7 +1001,7 @@ function honeyUpdate(j, dt) {
   for (let i = 0; i < Bb.n; i++) {
     const k = i * 3, r = R[i], sp = Math.min(0.3, 0.012 + 45 * r * r) * dt;
     let x = P[k] + _upB.x * sp, y = P[k + 1] + _upB.y * sp, z = P[k + 2] + _upB.z * sp;
-    const t = clamp(y / H, HONEY_T0 + (r + 0.01) / H, HONEY_T1 - 0.01); y = t * H;
+    const t = clamp(y / H, HONEY_T0 + (BASE_DOME + r + 0.01) / H, HONEY_T1 - 0.01); y = t * H;
     const { hw, hd, n } = section(t);
     const a = Math.max(0.05, hw * GLASS_IN - r - 0.012), b = Math.max(0.05, hd * GLASS_IN - r - 0.012);
     const rho = Math.pow(Math.pow(Math.abs(x / a), n) + Math.pow(Math.abs(z / b), n), 1 / n);
