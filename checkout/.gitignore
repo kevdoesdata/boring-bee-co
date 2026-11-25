@@ -1,0 +1,9 @@
+# Local secrets for `wrangler dev` — real values never belong in the repo.
+# Real secrets live in Cloudflare only, set with `wrangler secret put <NAME>`.
+.dev.vars
+.dev.vars.*
+
+# Wrangler's local build/auth cache.
+.wrangler/
+
+node_modules/

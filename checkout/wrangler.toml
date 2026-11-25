@@ -1,0 +1,43 @@
+name = "boring-bee-checkout"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# KV namespace: holds each paid order between the webhook firing and you
+# clicking "Buy label" in its email. Create it once with:
+#   npx wrangler kv namespace create ORDERS
+# then paste the id it prints in place of <PUT_THE_ID_HERE>.
+[[kv_namespaces]]
+binding = "ORDERS"
+id = "<PUT_THE_ID_HERE>"
+
+# Lets this Worker send email through Cloudflare's own Email Service — no
+# separate email vendor. One-time setup before this works:
+#   1. Move boringbeeco.com's DNS onto Cloudflare (Cloudflare account ->
+#      Add a site -> follow its steps -> update the nameservers at
+#      Spaceship to the two Cloudflare gives you). Free, and it only
+#      changes WHERE the domain's DNS records live, not what they say —
+#      copy today's GitHub Pages records over before switching so the live
+#      site doesn't blink.
+#   2. In the Cloudflare dashboard for that domain: Email Service -> onboard
+#      boringbeeco.com as a sending domain. This adds records on a
+#      "cf-bounce" subdomain only — it does not touch the root domain's MX
+#      records, so boringbeeco@gmail.com keeps receiving mail exactly as
+#      it does today.
+[[send_email]]
+name = "EMAIL"
+
+# A plain (non-secret) var: this Worker's own URL, used to build the "Buy
+# label" link in the order email. Set to whatever workers.dev URL (or custom
+# route) this Worker deploys to.
+[vars]
+WORKER_URL = "https://boring-bee-checkout.YOUR-SUBDOMAIN.workers.dev"
+
+# Secrets are NOT set here. Add each with:
+#   npx wrangler secret put STRIPE_SECRET_KEY
+# or in the Cloudflare dashboard: Workers > boring-bee-checkout > Settings > Variables.
+#   STRIPE_SECRET_KEY        sk_test_... / sk_live_...
+#   STRIPE_WEBHOOK_SECRET    whsec_... (from the webhook's own settings page, after you add it)
+#   SHIPPO_TOKEN             from Shippo > Settings > API
+#   FULFILL_SIGNING_SECRET   any long random string, e.g. `openssl rand -hex 32`
+#   SHIP_FROM_JSON           '{"name":"Boring Bee Co.","street1":"...","city":"Deerfield Beach","state":"FL","zip":"...","country":"US"}'
+#   TIER_CODES               optional, e.g. {"wh-7f3k":"wholesale"}
