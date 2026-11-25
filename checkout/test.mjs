@@ -26,4 +26,9 @@ assert.equal(r.status,200); assert.equal((await r.json()).url,'https://checkout.
 assert.equal(sent['shipping_options[0][shipping_rate_data][fixed_amount][amount]'],'1700');
 assert.equal(sent['line_items[0][quantity]'],'2');
 r=await worker.fetch(req({items:one(),ship:'FL'},'https://evil.example'),{}); assert.equal(r.status,403);
+// CORS preflight: the router must dispatch OPTIONS /checkout too, or the browser's
+// preflight 404s and the real POST never goes out ("Failed to fetch").
+const preflight = await worker.fetch(new Request('https://x/checkout',{method:'OPTIONS',headers:{Origin:'https://boringbeeco.com'}}),{});
+assert.equal(preflight.status, 204);
+assert.equal(preflight.headers.get('Access-Control-Allow-Origin'), 'https://boringbeeco.com');
 console.log('all checks pass');

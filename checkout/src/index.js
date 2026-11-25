@@ -35,7 +35,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (request.method === 'POST' && url.pathname === '/checkout') return handleCheckout(request, env);
+    if ((request.method === 'POST' || request.method === 'OPTIONS') && url.pathname === '/checkout') return handleCheckout(request, env);
     if (request.method === 'POST' && url.pathname === '/webhook/stripe') return handleStripeWebhook(request, env);
     if (request.method === 'GET' && url.pathname === '/fulfill') return handleFulfill(request, env);
 
