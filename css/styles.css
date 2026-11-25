@@ -41,6 +41,20 @@
   --r-pill:99px;
   --ease-honey:cubic-bezier(.2,.75,.2,1);  /* the house easing: quick start, long slow settle */
   --shadow-soft:0 2px 8px color-mix(in srgb,var(--ink-brown) 16%,transparent);
+
+  /* 3D hero jars (js/hero-3d.js reads these): materials and texture paint, not for UI */
+  --j3-honey-spring:#d48042;  /* light honey seen through the glass */
+  --j3-honey-fall:#733626;    /* dark honey seen through the glass */
+  --j3-lid:#f3f1eb;           /* white painted metal cap */
+  --j3-glass-tint:#8d9b8a;    /* faint grey-green at the glass edges */
+  --j3-wax:#f3e1a2; --j3-wax-dark:#d9bf78;
+  --j3-cap-hi:#fbf1cf; --j3-cap-lo:#e2c983;                         /* capped comb cells */
+  --j3-cell-deep:#c8842a; --j3-cell-mid:#dca04a; --j3-cell-rim:#e9bd63; /* honey-filled cells */
+  --j3-cell-shine:rgba(255,248,225,.55); --j3-comb-cut:#d99a3e;
+  --j3-speck:#3b2410; --j3-bubble:#fff6e2;
+  --j3-shadow:rgba(70,40,10,.5); --j3-shadow-edge:rgba(70,40,10,0);
+  --j3-light-sky:#fff1dc; --j3-light-ground:#7a5a3a; --j3-light-key:#fff2e2; --j3-light-rim:#ffe8cc;
+  --j3-white:#fff; --j3-bump-cap:#bbb; --j3-bump-cell:#222; --j3-bump-cut:#333;  /* comb relief (bump map greys) */
 }
 /* tokens:end */
 *{box-sizing:border-box}
@@ -273,3 +287,38 @@ main{position:relative}
 .sz.s-fa .legend .lg{border-color:var(--ln)}
 @media (prefers-reduced-motion:reduce){.pour .base{transition:background-color .6s ease}.pour .flow{display:none}}
 #hatch rect{fill:transparent}
+
+/* ---- 3D hero jars (js/hero-tier.js picks the version, js/hero-3d.js draws it) ----
+   The photos above stay the first paint and the fallback; the canvas fades in over them when ready. */
+.stage{position:relative}
+.stage .sub{position:relative;z-index:4}
+#gl{position:absolute;inset:0;z-index:3;width:100%;height:100%;display:block;touch-action:pan-y;opacity:0;pointer-events:none;transition:opacity .45s ease}
+.gl-ready #gl{opacity:1;pointer-events:auto}
+.gl-on .hero h1,.gl-on .hero .l2 .hl{color:transparent}
+.gl-on .hero .l2 .hl{background:transparent}
+.gl-on .jars .jar{opacity:0!important}
+.gl-on .flt{animation-play-state:paused}
+#gl.hover{cursor:grab}
+#gl.dragging{cursor:grabbing}
+.toast{position:absolute;z-index:6;left:0;top:0;font:500 var(--fs-label) var(--sans);color:var(--ink);text-decoration:none;background:var(--cream-light);border:1px solid var(--ln);border-radius:var(--r-pill);padding:.32rem .75rem;opacity:0;transform:translate(-50%,6px);transition:opacity .35s,transform .35s;pointer-events:none;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast i,.reset .tip i{display:inline-block;width:.5rem;height:.5rem;margin-right:.4rem;background:var(--leaf);clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)}
+.reset{position:absolute;z-index:6;width:30px;height:30px;padding:0;border:0;border-radius:50%;background:none;color:var(--leaf);display:grid;place-items:center;cursor:pointer;opacity:0;transform:translate(-50%,-50%) scale(.7);pointer-events:none;-webkit-tap-highlight-color:transparent;transition:opacity .35s ease,transform .5s var(--ease-honey),color .25s ease}
+.reset svg{transition:transform .45s var(--ease-honey)}
+.reset.on{opacity:.7;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+.reset.on:focus-visible{opacity:1;color:color-mix(in srgb,var(--leaf) 84%,var(--ink-brown))}
+.reset:focus-visible{outline:2px solid var(--leaf);outline-offset:1px}
+.reset .tip{--tx:-50%;position:absolute;bottom:calc(100% + 4px);left:50%;transform:translate(var(--tx),4px);font:500 var(--fs-label) var(--sans);color:var(--ink);background:var(--cream-light);border:1px solid var(--ln);border-radius:var(--r-pill);padding:.28rem .7rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s}
+.reset:focus-visible .tip,.reset.tip-on .tip{opacity:1;transform:translate(var(--tx),0)}
+.reset.edge .tip{--tx:0;left:auto;right:-4px}
+@media (hover:hover){
+  .reset.on:hover{opacity:1;color:color-mix(in srgb,var(--leaf) 84%,var(--ink-brown))}
+  .reset:hover svg{transform:rotate(45deg)}
+  .reset:hover .tip{opacity:1;transform:translate(var(--tx),0)}
+}
+@media (hover:none){.reset{width:44px;height:44px}.reset.on{opacity:.85}}  /* finger-sized target; the arrow stays small */
+@media (max-width:760px){
+  /* phones: a full-height hero with bigger jars (photos and 3D alike) */
+  .hero{min-height:100svh;padding-top:4.75rem;padding-bottom:2.25rem}
+  .jars{height:clamp(15rem,68vw,22rem);margin:-.3rem 0 -.9rem;gap:.4rem}
+}

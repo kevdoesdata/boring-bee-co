@@ -299,6 +299,7 @@
   var jars=document.querySelectorAll('.jars .jar');
   if(matchMedia('(pointer:fine)').matches&&!matchMedia('(prefers-reduced-motion:reduce)').matches){
     window.addEventListener('mousemove',function(e){
+      if(document.documentElement.classList.contains('gl-on'))return; // the 3D jars have taken over
       var x=e.clientX/innerWidth-.5,y=e.clientY/innerHeight-.5;
       jars.forEach(function(j){var k=+j.dataset.k;
         j.style.transform='translate('+(x*-22*k)+'px,'+(y*-10*k)+'px)';

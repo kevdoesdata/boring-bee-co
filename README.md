@@ -7,8 +7,33 @@ No build step, no server, no dependencies.
 index.html        markup
 css/styles.css    all styles
 js/main.js        all interaction (comb toggle, year wheel, hero jars)
+js/hero-tier.js   picks which hero jars a device gets (see below)
+js/hero-3d.js     the 3D hero jars
+js/vendor/        three.js r160 (MIT), self-hosted so the CSP stays 'self'
 images/           product and photo assets (webp)
 ```
+
+## Hero jars (3D)
+
+The hero photos load first for everyone. On devices that can take it, the 3D jars fade in over
+them once ready: drag and fling, flick up or down to tumble, they float home on their own,
+honey sloshes slowly, and a small arrow resets them.
+
+`js/hero-tier.js` picks one of four versions:
+
+| Version | Who | What |
+|---|---|---|
+| Desktop | mouse / big screens | full 3D, see-through honey |
+| Phone | recent phones | same look, lower resolution, half frame rate while jars just float |
+| Older phone | ~5+ years old, budget chips, low battery | lighter honey, 30 fps |
+| Photos | data saver, reduce motion, no WebGL, 3D failed | the photos, as before |
+
+On phones, up/down swipes always scroll the page; a sideways swipe grabs a jar; a tap flips it
+and shows a shop link. The 3D stops completely when the hero is off screen or the tab is hidden.
+If a phone runs slower than expected it steps down a version on its own.
+
+To try a version on purpose, add `#tier=full`, `#tier=phone`, `#tier=lite` or `#tier=photo`
+to the URL and reload. 3D material colours live in the token block (`--j3-*`).
 
 ## Preview locally
 
