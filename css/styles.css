@@ -303,21 +303,16 @@ main{position:relative}
 #gl.dragging{cursor:grabbing}
 .toast{position:absolute;z-index:6;left:0;top:0;font:500 var(--fs-label) var(--sans);color:var(--ink);text-decoration:none;background:var(--cream-light);border:1px solid var(--ln);border-radius:var(--r-pill);padding:.32rem .75rem;opacity:0;transform:translate(-50%,6px);transition:opacity .35s,transform .35s;pointer-events:none;white-space:nowrap}
 .toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
-.toast i,.reset .tip i{display:inline-block;width:.5rem;height:.5rem;margin-right:.4rem;background:var(--leaf);clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)}
-.reset{position:absolute;z-index:6;width:30px;height:30px;padding:0;border:0;border-radius:50%;background:none;color:var(--leaf);display:grid;place-items:center;cursor:pointer;opacity:0;transform:translate(-50%,-50%) scale(.7);pointer-events:none;-webkit-tap-highlight-color:transparent;transition:opacity .35s ease,transform .5s var(--ease-honey),color .25s ease}
-.reset svg{transition:transform .45s var(--ease-honey)}
-.reset.on{opacity:.7;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
-.reset.on:focus-visible{opacity:1;color:color-mix(in srgb,var(--leaf) 84%,var(--ink-brown))}
-.reset:focus-visible{outline:2px solid var(--leaf);outline-offset:1px}
-.reset .tip{--tx:-50%;position:absolute;bottom:calc(100% + 4px);left:50%;transform:translate(var(--tx),4px);font:500 var(--fs-label) var(--sans);color:var(--ink);background:var(--cream-light);border:1px solid var(--ln);border-radius:var(--r-pill);padding:.28rem .7rem;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s}
-.reset:focus-visible .tip,.reset.tip-on .tip{opacity:1;transform:translate(var(--tx),0)}
-.reset.edge .tip{--tx:0;left:auto;right:-4px}
-@media (hover:hover){
-  .reset.on:hover{opacity:1;color:color-mix(in srgb,var(--leaf) 84%,var(--ink-brown))}
-  .reset:hover svg{transform:rotate(45deg)}
-  .reset:hover .tip{opacity:1;transform:translate(var(--tx),0)}
-}
-@media (hover:none){.reset{width:44px;height:44px}.reset.on{opacity:.85}}  /* finger-sized target; the arrow stays small */
+.toast i{display:inline-block;width:.5rem;height:.5rem;margin-right:.4rem;background:var(--leaf);clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)}
+.reset{position:absolute;z-index:6;left:0;top:0;display:inline-flex;align-items:center;gap:.42rem;height:30px;box-sizing:border-box;padding:0 .8rem 0 .62rem;border:1px solid var(--ln);border-radius:var(--r-pill);background:var(--cream-light);color:var(--ink);font:500 var(--fs-label) var(--sans);letter-spacing:0;white-space:nowrap;cursor:pointer;
+box-shadow:0 1px 3px color-mix(in srgb,var(--ink-brown) 8%,transparent);opacity:0;transform:translate(-50%,-50%) translateY(6px);pointer-events:none;-webkit-tap-highlight-color:transparent;
+transition:opacity .35s ease,transform .5s var(--ease-honey),border-color .25s ease}
+.reset svg{color:var(--leaf);flex:none;transition:transform .5s var(--ease-honey)}
+.reset::before{content:"";position:absolute;inset:-8px -4px}   /* a finger-sized target around the small pill */
+.reset.on{opacity:1;transform:translate(-50%,-50%);pointer-events:auto}
+.reset.on:active{transform:translate(-50%,-50%) scale(.97)}
+.reset:focus-visible{outline:2px solid var(--leaf);outline-offset:2px}
+@media (hover:hover){ .reset:hover{border-color:var(--leaf)} .reset:hover svg{transform:rotate(-50deg)} }
 @media (max-width:760px){
   /* phones: a full-height hero with bigger jars (photos and 3D alike) */
   .hero{min-height:100svh;padding-top:4.75rem;padding-bottom:2.25rem}

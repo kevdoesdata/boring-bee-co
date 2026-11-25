@@ -817,20 +817,10 @@ function layoutScene() {
     y1: Math.max(0.1, (HOME_PY - (L.barBottom + halfH + 6)) / S),
     y0: Math.min(-0.1, (HOME_PY - (L.subTop - halfH - 4)) / S),
   };
-  // reset arrow: just right of the period in "Boring name.", a touch above label height, clear of the dark jar
-  const g1 = L.lines[0].glyphs, dot = g1[g1.length - 1];
-  const jarRight = cx + offs + A * S, lidTop = HOME_PY - jarPx / 2;
-  if (W > 760) {
-    resetBtn.classList.remove('edge');
-    const bx = Math.max(dot ? dot.x + dot.w + 18 : 0, jarRight + 26);
-    resetBtn.style.left = Math.min(W - 20, bx) + 'px';
-    resetBtn.style.top = (lidTop + 0.2 * jarPx) + 'px';
-  } else {   // phones: right after the period if there's room, else tucked under it at the right edge
-    const room = dot && dot.x + dot.w + 34 < W - 6;
-    resetBtn.style.left = (room ? dot.x + dot.w + 24 : W - 26) + 'px';
-    resetBtn.classList.toggle('edge', !room);
-    resetBtn.style.top = (dot ? (room ? dot.y - dot.h * 0.18 : dot.y + dot.h * 0.32) : lidTop) + 'px';
-  }
+  // reset: a small "Reset jars" pill centred just under the jars' resting spot, the place they float back to
+  // (same row as the shop tag; only one of the two shows at a time)
+  resetBtn.style.left = cx + 'px';
+  resetBtn.style.top = (HOME_PY + jarPx / 2 + 30) + 'px';
   // contact shadows, sized like the site's (76% of the photo width, 22px tall, just under the base)
   for (const j of jars) { j.shadow.scale.set((0.76 * imgW) / S, 26 / S, 1); j.floorY = -(jarPx / 2 + 8) / S; }
 }
@@ -1135,7 +1125,6 @@ toast.addEventListener('click', (e) => {
 
 // =================== reset button ===================
 const resetBtn = document.getElementById('resetBtn');
-let tipShown = false;
 function jarDisplaced(j, t) {
   if (j.resetting) return false;
   const dp = Math.hypot(j.p.x - j.home.x, j.p.y - j.home.y);
@@ -1149,11 +1138,9 @@ function updateResetButton(t) {
     _qe.copy(homeQuat(j, t)).multiply(_qi.copy(j.q).invert());
     if (dp < 0.03 && 2 * Math.acos(Math.min(1, Math.abs(_qe.w))) < 0.05 && j.v.length() < 0.05) j.resetting = false;
   }
-  const on = jars.some(j => jarDisplaced(j, t));
+  const on = jars.some(j => jarDisplaced(j, t)) && !toast.classList.contains('on');
   if (on !== resetBtn.classList.contains('on')) {
     resetBtn.classList.toggle('on', on); resetBtn.tabIndex = on ? 0 : -1; resetBtn.setAttribute('aria-hidden', on ? 'false' : 'true');
-    // no hover on a phone, so the label shows by itself the first time the arrow appears
-    if (on && TOUCHY && !tipShown) { tipShown = true; resetBtn.classList.add('tip-on'); setTimeout(() => resetBtn.classList.remove('tip-on'), 1800); }
   }
 }
 resetBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -1162,8 +1149,8 @@ resetBtn.addEventListener('click', () => {
   for (const j of jars) { j.grab = null; j.resetting = true; j.lastTouch = -1e9; }
   active = null; pending = null; canvas.classList.remove('dragging');
   const icon = resetBtn.querySelector('svg');
-  icon.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 800, easing: 'cubic-bezier(.2,.75,.2,1)' });
-  resetBtn.classList.remove('on', 'tip-on'); resetBtn.tabIndex = -1;
+  icon.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(-360deg)' }], { duration: 800, easing: 'cubic-bezier(.2,.75,.2,1)' });
+  resetBtn.classList.remove('on'); resetBtn.tabIndex = -1;
 });
 
 // =================== motion ===================
@@ -1247,7 +1234,7 @@ function parkJars() {
     j.sx = j.sz = j.svx = j.svz = 0; j.velS = j.prevVelS = j.wS = j.prevWS = 0;
     j.cOff.set(0, 0, 0); j.cV.set(0, 0, 0); j.cPrevV.copy(j.v); j.cAcc.set(0, 0, 0);
   }
-  resetBtn.classList.remove('on', 'tip-on'); resetBtn.tabIndex = -1; resetBtn.setAttribute('aria-hidden', 'true');
+  resetBtn.classList.remove('on'); resetBtn.tabIndex = -1; resetBtn.setAttribute('aria-hidden', 'true');
   toast.classList.remove('on');
 }
 function sync() {
@@ -1292,7 +1279,7 @@ function stepDown(to, reason) {
 }
 function giveUp(reason) {        // back to the still photos for good
   dead = true; running = false;
-  resetBtn.classList.remove('on', 'tip-on'); toast.classList.remove('on');
+  resetBtn.classList.remove('on'); toast.classList.remove('on');
   BB.back2D(reason);
 }
 canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); giveUp('3D switched off by the browser'); });
