@@ -85,7 +85,7 @@ const A = 1.0;
 const H_TRACE = 2 * A / 0.545;
 const SH0 = 0.61 * H_TRACE, SH1 = 0.865 * H_TRACE, LID0 = 0.922 * H_TRACE;
 const SHOULDER_SQUASH = 1.0;    // shoulder exactly as traced (the approved shape)
-const NECK_SHOW = 0.04;         // clear neck between shoulder and lid: ~1.7mm, lid sits almost on the shoulder
+const NECK_SHOW = 0.08;         // clear neck between shoulder and lid: ~3.4mm, enough to show the glass lip under the cap
 function squashY(y) {
   if (y <= SH0) return y;
   if (y <= SH1) return SH0 + (y - SH0) * SHOULDER_SQUASH;
@@ -109,7 +109,8 @@ const PROFILE_TRACE = [
   [0.110, 0.885], [0.140, 0.915], [0.180, 0.94], [0.220, 0.97], [0.280, 0.99],
   [0.320, 1.00], [0.480, 1.00], [0.530, 0.98], [0.570, 0.96], [0.610, 0.935],
   [0.650, 0.90], [0.690, 0.85], [0.730, 0.81], [0.775, 0.745], [0.815, 0.68],
-  [0.845, 0.62], [0.865, 0.578], [0.880, 0.565], [0.940, 0.565], [0.960, 0.578],
+  [0.845, 0.62], [0.865, 0.578], [0.880, 0.565], [0.893, 0.566], [0.901, 0.588], [0.909, 0.598],
+  [0.916, 0.595], [0.921, 0.574], [0.940, 0.565], [0.960, 0.578],
   [0.975, 0.578], [0.990, 0.53], [1.000, 0.48]
 ];
 const PROFILE = PROFILE_TRACE.map(([t, w]) => [yT(t), w]);
@@ -198,7 +199,7 @@ function buildRingSurface(rings, N, vs, seam = false) {
   geo.setIndex(idx);
   return geo;
 }
-function jarRings({ t0 = 0, t1 = 1, inset = 1, yBottom = 0, steps = 130 }) {
+function jarRings({ t0 = 0, t1 = 1, inset = 1, yBottom = 0, steps = 130, dome = 0 }) {
   const rings = [];
   const ringAt = (t, scale, yOverride) => (phi) => {
     const { hw, hd, n } = section(t);
@@ -206,11 +207,13 @@ function jarRings({ t0 = 0, t1 = 1, inset = 1, yBottom = 0, steps = 130 }) {
     const r = scale === 1 ? ribOffset(t, p.nx) * inset : 0;
     return new THREE.Vector3((p.x * scale) + p.nx * r, yOverride ?? t * H, (p.z * scale) + p.nz * r);
   };
-  for (const s of [0, 0.35, 0.7, 0.92]) rings.push(ringAt(t0, s, yBottom));
-  for (let k = 0; k <= steps; k++) {
-    const t = t0 + (t1 - t0) * (k / steps);
-    rings.push(ringAt(t, 1, k === 0 ? yBottom : undefined));
-  }
+  // the base: centre pushed up into the jar by `dome`, easing down to a resting ring near the edge
+  for (const [s, f] of [[0, 1], [0.3, 0.9], [0.55, 0.62], [0.75, 0.28], [0.88, 0.04], [0.94, 0]]) rings.push(ringAt(t0, s, yBottom + dome * f));
+  const ts = [];
+  for (let k = 0; k <= steps; k++) ts.push(t0 + (t1 - t0) * (k / steps));
+  for (let t = yT(0.86); t < yT(0.93); t += 0.004 / H) if (t > t0 && t < t1) ts.push(t);   // the neck lip needs fine rings
+  ts.sort((a, b) => a - b);
+  ts.forEach((t, k) => { if (k === 0 || t - ts[k - 1] > 1e-6) rings.push(ringAt(t, 1, k === 0 ? yBottom : undefined)); });
   for (const s of [0.92, 0.6, 0.25, 0]) rings.push(ringAt(t1, s));
   return rings;
 }
@@ -224,7 +227,9 @@ function lidGeometry() {
     [LID_R * 1.0, y0 + 0.11],                                                        // smooth lower band
     [LID_R * 1.0, y1 - 0.052],                                                       // ribbed upper band
     [LID_R * 1.013, y1 - 0.033], [LID_R * 0.999, y1 - 0.011],                         // rolled top bead
-    [LID_R * 0.955, y1 - 0.001], [LID_R * 0.86, y1], [0, y1]                          // flat top
+    [LID_R * 0.965, y1 - 0.001], [LID_R * 0.93, y1],                                  // over the rim
+    [LID_R * 0.895, y1 - 0.006], [LID_R * 0.865, y1 - 0.016],                         // down the inner wall
+    [LID_R * 0.8, y1 - 0.021], [LID_R * 0.5, y1 - 0.026], [0, y1 - 0.029]             // dished top panel
   ];
   const RIB_K = 5;
   const pts = [], keyIdx = [];
@@ -235,7 +240,7 @@ function lidGeometry() {
     for (let q = 0; q < n; q++) { const f = q / n; pts.push([r0 + (r1 - r0) * f, ya + (yb - ya) * f]); }
   }
   keyIdx[key.length - 1] = pts.length;
-  pts.push([0, y1]);
+  pts.push(key[key.length - 1]);
   const vs = [0];
   for (let k = 1; k < pts.length; k++) vs.push(vs[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]));
   const total = vs[vs.length - 1];
@@ -461,9 +466,10 @@ labelBackMat.onBeforeCompile = (sh) => {
 };
 
 // shared geometry
-const HONEY_T0 = 0.008, HONEY_T1 = 0.985;
-const glassGeo = buildRingSurface(jarRings({}), 160);
-const honeyGeo = buildRingSurface(jarRings({ t0: HONEY_T0, t1: HONEY_T1, inset: GLASS_IN, yBottom: HONEY_T0 * H }), 160);
+const HONEY_T0 = 0.02, HONEY_T1 = 0.985;   // a thicker clear glass floor under the honey, as in the photos
+const BASE_DOME = 0.07;                   // push-up: the base rises ~3mm into the jar at the centre
+const glassGeo = buildRingSurface(jarRings({ dome: BASE_DOME }), 160);
+const honeyGeo = buildRingSurface(jarRings({ t0: HONEY_T0, t1: HONEY_T1, inset: GLASS_IN, yBottom: HONEY_T0 * H, dome: BASE_DOME }), 160);
 const labelGeo = labelGeometry();
 const bubbleGeo = new THREE.SphereGeometry(1, 10, 8);
 const shadowTex = (() => {
