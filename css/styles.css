@@ -52,7 +52,7 @@
   --j3-cell-deep:#c8842a; --j3-cell-mid:#dca04a; --j3-cell-rim:#e9bd63; /* honey-filled cells */
   --j3-cell-shine:rgba(255,248,225,.55); --j3-comb-cut:#d99a3e;
   --j3-speck:#3b2410; --j3-bubble:#fff6e2;
-  --j3-shadow:rgba(70,40,10,.5); --j3-shadow-edge:rgba(70,40,10,0);
+  --j3-shadow-soft:var(--molasses); --j3-shadow-core-spring:#6b3410; --j3-shadow-core-fall:var(--molasses);  /* soft shadow + contact core (warmer under light honey) */
   --j3-light-sky:#fff1dc; --j3-light-ground:#7a5a3a; --j3-light-key:#fff2e2; --j3-light-rim:#ffe8cc;
   --j3-studio-room:#2a2622; --j3-studio-light:#fff8ef;  /* product-photo studio: reflected in the glass and cap only */
   --j3-white:#fff; --j3-bump-cap:#bbb; --j3-bump-cell:#222; --j3-bump-cut:#333;  /* comb relief (bump map greys) */

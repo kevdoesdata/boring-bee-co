@@ -467,11 +467,14 @@ const honeyGeo = buildRingSurface(jarRings({ t0: HONEY_T0, t1: HONEY_T1, inset: 
 const labelGeo = labelGeometry();
 const bubbleGeo = new THREE.SphereGeometry(1, 10, 8);
 const shadowTex = (() => {
-  const c = document.createElement('canvas'); c.width = 256; c.height = 64;
-  const g = c.getContext('2d');
-  const rg = g.createRadialGradient(128, 32, 4, 128, 32, 120);
-  rg.addColorStop(0, tok('--j3-shadow')); rg.addColorStop(1, tok('--j3-shadow-edge'));
-  g.save(); g.scale(1, 0.27); g.fillStyle = rg; g.fillRect(0, 0, 256, 240); g.restore();
+  const N = 256, c = document.createElement('canvas'); c.width = c.height = N;
+  const g = c.getContext('2d'), img = g.createImageData(N, N), d = img.data;
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const dx = (x + 0.5) / (N / 2) - 1, dy = (y + 0.5) / (N / 2) - 1, r2 = dx * dx + dy * dy;
+    const a = r2 >= 1 ? 0 : Math.exp(-r2 * 3.2) * (1 - r2) ** 1.5;
+    const k = (y * N + x) * 4; d[k] = d[k + 1] = d[k + 2] = 255; d[k + 3] = Math.round(a * 255);
+  }
+  g.putImageData(img, 0, 0);
   return new THREE.CanvasTexture(c);
 })();
 
@@ -541,7 +544,7 @@ function randomInsidePoint(tMin, tMax, rMin, rMax, frontBias) {
   return new THREE.Vector3(p.x, t * H, p.z);
 }
 
-function makeJar({ att, dist, rough, fill, comb, bubbles, specks, x, rot, lite }) {
+function makeJar({ att, dist, rough, fill, comb, bubbles, specks, x, rot, lite, shadowTint }) {
   bubbles = Math.round(bubbles * Q.bubbles); specks = Math.round(specks * Q.bubbles);
   const group = new THREE.Group();
   const body = new THREE.Group();
@@ -600,14 +603,15 @@ function makeJar({ att, dist, rough, fill, comb, bubbles, specks, x, rot, lite }
   const label = new THREE.Mesh(labelGeo, labelMat); label.renderOrder = 4; label.visible = false; body.add(label);
   const labelBack = new THREE.Mesh(labelGeo, labelBackMat); labelBack.visible = false; body.add(labelBack);
 
-  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.6 * A, 0.65 * A),
-    new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
-  scene.add(shadow);
+  const shadowMat = (color) => new THREE.MeshBasicMaterial({ map: shadowTex, color, transparent: true, depthWrite: false, toneMapped: false });
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), shadowMat(tok('--j3-shadow-soft')));   // soft, wide
+  const shadowCore = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), shadowMat(shadowTint));   // tight contact shadow
+  scene.add(shadow, shadowCore);
 
   group.traverse(o => o.userData.jarGroup = group);
   scene.add(group);
   return {
-    group, body, innards, combGroup, dots, bub, honey, surface, clip, label, labelBack, shadow, fill, lid, glass, lite,
+    group, body, innards, combGroup, dots, bub, honey, surface, clip, label, labelBack, shadow, shadowCore, fill, lid, glass, lite,
     home: { x, rot }, x, y: 0, vx: 0, vy: 0, rot, vr: 0, px: x, prot: rot,
     velS: 0, prevVelS: 0, wS: 0, prevWS: 0, lean: 0,
     sx: 0, sz: 0, svx: 0, svz: 0, honeyRot: rot,
@@ -619,9 +623,9 @@ function makeJar({ att, dist, rough, fill, comb, bubbles, specks, x, rot, lite }
 // "spring flow" (light, with comb) and "fall flow" (dark), matching the site's two jars
 const jars = [
   makeJar({ att: tok('--j3-honey-spring'), dist: 0.55, rough: 0.1, fill: yT(0.87), comb: true, bubbles: 70, specks: 40, x: -1.2, rot: -0.1,
-    lite: { thin: [0.86, 0.5, 0.26], thick: [0.7, 0.33, 0.14] } }),
+    lite: { thin: [0.86, 0.5, 0.26], thick: [0.7, 0.33, 0.14] }, shadowTint: tok('--j3-shadow-core-spring') }),
   makeJar({ att: tok('--j3-honey-fall'), dist: 0.74, rough: 0.06, fill: yT(0.87), comb: false, bubbles: 22, specks: 15, x: 1.2, rot: 0.1,
-    lite: { thin: [0.55, 0.26, 0.22], thick: [0.44, 0.18, 0.15] } }),
+    lite: { thin: [0.55, 0.26, 0.22], thick: [0.44, 0.18, 0.15] }, shadowTint: tok('--j3-shadow-core-fall') }),
 ];
 jars[0].name = 'Shop spring flow'; jars[0].href = '#spring'; jars[0].introDelay = 350; jars[0].bobDur = 6.2; jars[0].bobDel = -1.5;
 jars[1].name = 'Shop fall flow';   jars[1].href = '#fall';   jars[1].introDelay = 500; jars[1].bobDur = 7.4; jars[1].bobDel = -4.0;
@@ -629,7 +633,6 @@ for (const j of jars) {
   // cheap invisible box for hover / grab hit-testing
   const proxy = new THREE.Mesh(new THREE.BoxGeometry(2 * A, TOTAL_H, 2 * DEPTH_RATIO * A), new THREE.MeshBasicMaterial());
   proxy.visible = false; proxy.userData.jarGroup = j.group; j.group.add(proxy); j.proxy = proxy;
-  j.shadow.geometry.dispose(); j.shadow.geometry = new THREE.PlaneGeometry(1, 1);
   j.hoverLift = 0; j.introDone = true;
 }
 
@@ -821,8 +824,8 @@ function layoutScene() {
   // (same row as the shop tag; only one of the two shows at a time)
   resetBtn.style.left = cx + 'px';
   resetBtn.style.top = (HOME_PY + jarPx / 2 + 30) + 'px';
-  // contact shadows, sized like the site's (76% of the photo width, 22px tall, just under the base)
-  for (const j of jars) { j.shadow.scale.set((0.76 * imgW) / S, 26 / S, 1); j.floorY = -(jarPx / 2 + 8) / S; }
+  // shadow sizes (world units), from the photo slot: a soft one about the jar's width, a tight core under the base
+  for (const j of jars) { j.shBase = { w: 1.35 * imgW / S, h: 34 / S, cw: 0.9 * imgW / S, ch: 17 / S }; j.floorY = -(jarPx / 2 + 4) / S; }
 }
 
 // =================== free-floating rigid body (zero-g) ===================
@@ -1171,7 +1174,7 @@ function driftPx(j, now) {
   let f = it - k; if (k & 1) f = 1 - f;          // alternate
   return 5 - 11 * easeInOut(f);                   // CSS: -5px (up) -> +6px (down); the 3D's +y is up
 }
-const _upw = new THREE.Vector3();
+const _upw = new THREE.Vector3(), _shM = new THREE.Matrix4();
 let lastT = 0, frameNo = 0, running = false, dead = false, shown = false, onScreen = true;
 function isIdle() {
   if (active || pending) return false;
@@ -1194,11 +1197,20 @@ function poseJars(now, t, dt) {
     j.group.quaternion.copy(j.q);
     updateHoneySurface(j);
 
-    const lift = Math.max(0, j.p.y + j.hoverLift) * S;   // px off the "floor"
-    const k = 1 - Math.min(lift, 160) / 160 * 0.35;
+    // shadow: follows the jar's footprint as it turns (lying down = longer), and softens, spreads and fades as the
+    // jar's lowest point rises off the "floor" (drift and hover lift included, so it breathes with the float)
+    const e = _shM.makeRotationFromQuaternion(j.q).elements, hx = A, hy = TOTAL_H / 2, hz = JAR_D / 2;
+    const footX = (Math.abs(e[0]) * hx + Math.abs(e[4]) * hy + Math.abs(e[8]) * hz) / hx;
+    const footZ = Math.min(2.5, (Math.abs(e[2]) * hx + Math.abs(e[6]) * hy + Math.abs(e[10]) * hz) / hz);
+    const lowY = Math.abs(e[1]) * hx + Math.abs(e[5]) * hy + Math.abs(e[9]) * hz;
+    const gap = Math.max(0, (j.p.y + bob + j.hoverLift - lowY + hy) * S);      // px from the jar's lowest point to the floor
+    const spread = 1 + Math.min(gap, 300) / 380, fade = Math.max(0, 1 - gap / 280), contact = Math.max(0, 1 - gap / 60);
     j.shadow.position.set(j.p.x, j.floorY, -0.9);
-    j.shadow.material.opacity = 0.7 * (1 - Math.min(lift, 200) / 260);
-    j.shadow.scale.set((0.76 * 0.627 * L.slot.h) / S * k, 26 / S * k, 1);
+    j.shadow.scale.set(j.shBase.w * footX * spread, j.shBase.h * footZ * spread, 1);
+    j.shadow.material.opacity = 0.6 * fade * fade;
+    j.shadowCore.position.set(j.p.x, j.floorY + 1 / S, -0.85);
+    j.shadowCore.scale.set(j.shBase.cw * footX, j.shBase.ch * footZ, 1);
+    j.shadowCore.material.opacity = 0.62 * contact;
   }
 }
 function animate(now) {
