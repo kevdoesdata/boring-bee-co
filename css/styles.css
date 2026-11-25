@@ -45,7 +45,7 @@
   /* 3D hero jars (js/hero-3d.js reads these): materials and texture paint, not for UI */
   --j3-honey-spring:#d48042;  /* light honey seen through the glass */
   --j3-honey-fall:#733626;    /* dark honey seen through the glass */
-  --j3-lid:#f3f1eb;           /* white painted metal cap */
+  --j3-lid:#ecebe6;           /* white enamel over metal: the cap */
   --j3-glass-tint:#8d9b8a;    /* faint grey-green at the glass edges */
   --j3-wax:#f3e1a2; --j3-wax-dark:#d9bf78;
   --j3-cap-hi:#fbf1cf; --j3-cap-lo:#e2c983;                         /* capped comb cells */
@@ -54,6 +54,7 @@
   --j3-speck:#3b2410; --j3-bubble:#fff6e2;
   --j3-shadow:rgba(70,40,10,.5); --j3-shadow-edge:rgba(70,40,10,0);
   --j3-light-sky:#fff1dc; --j3-light-ground:#7a5a3a; --j3-light-key:#fff2e2; --j3-light-rim:#ffe8cc;
+  --j3-studio-room:#2a2622; --j3-studio-light:#fff8ef;  /* product-photo studio: reflected in the glass and cap only */
   --j3-white:#fff; --j3-bump-cap:#bbb; --j3-bump-cell:#222; --j3-bump-cut:#333;  /* comb relief (bump map greys) */
 }
 /* tokens:end */

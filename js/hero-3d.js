@@ -52,6 +52,27 @@ function buildEnvironment() {
   return env;
 }
 scene.environment = buildEnvironment();
+// A product-photo studio, used only by the shiny parts (glass reflections, the cap): a dim room with tall
+// softboxes left and right and one overhead, so the glass picks up the long vertical streaks the product shots
+// have and the cap gets crisp, cool highlights. Honey and label keep the softer room light, so their colours stay.
+function buildStudio() {
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const s = new THREE.Scene();
+  const room = new THREE.Color(tok('--j3-studio-room')), light = new THREE.Color(tok('--j3-studio-light'));
+  s.add(new THREE.Mesh(new THREE.BoxGeometry(24, 14, 24), new THREE.MeshBasicMaterial({ color: room, side: THREE.BackSide })));
+  const softbox = (w, h, x, y, z, k) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: light.clone().multiplyScalar(k), side: THREE.DoubleSide }));
+    m.position.set(x, y, z); m.lookAt(0, 0, 0); s.add(m);
+  };
+  softbox(1.4, 9, -7, 0.5, -1.5, 7);    // tall strip, left and a little behind: the streak down the left side
+  softbox(1.4, 9, 7, 0.5, -2.5, 6);     // tall strip, right
+  softbox(8, 3, 0, 6.5, 1, 3.5);        // overhead: shoulder and cap-top highlights
+  softbox(7, 4, 0, -1, 8, 1.4);         // soft fill from the camera side, so the cap reads white, not grey
+  const env = pmrem.fromScene(s, 0.01).texture;
+  pmrem.dispose();
+  return env;
+}
+const studioEnv = buildStudio();
 scene.add(new THREE.HemisphereLight(tok('--j3-light-sky'), tok('--j3-light-ground'), 0.35));
 const key = new THREE.DirectionalLight(tok('--j3-light-key'), 1.0); key.position.set(-3, 4, 6); scene.add(key);
 const rim = new THREE.DirectionalLight(tok('--j3-light-rim'), 0.55); rim.position.set(4, 3, -5); scene.add(rim);
@@ -144,31 +165,32 @@ function ribOffset(t, nx) {
   return RIB_AMP * Math.pow(Math.abs(Math.sin(Math.PI * phase)), 0.6) * band * side;
 }
 
-function buildRingSurface(rings, N, vs) {
-  const M = rings.length;
-  const pos = new Float32Array(M * N * 3);
-  for (let j = 0; j < M; j++) for (let i = 0; i < N; i++) {
+function buildRingSurface(rings, N, vs, seam = false) {
+  const M = rings.length, C = seam ? N + 1 : N;   // seam: one extra column at u = 1 so a texture can wrap cleanly
+  const pos = new Float32Array(M * C * 3);
+  for (let j = 0; j < M; j++) for (let i = 0; i < C; i++) {
     const p = rings[j]((i / N) * Math.PI * 2);
-    pos.set([p.x, p.y, p.z], (j * N + i) * 3);
+    pos.set([p.x, p.y, p.z], (j * C + i) * 3);
   }
-  const P = (i, j) => { i = (i + N) % N; j = Math.max(0, Math.min(M - 1, j)); const k = (j * N + i) * 3; return new THREE.Vector3(pos[k], pos[k + 1], pos[k + 2]); };
-  const nor = new Float32Array(M * N * 3);
+  const P = (i, j) => { i = (i + N) % N; j = Math.max(0, Math.min(M - 1, j)); const k = (j * C + i) * 3; return new THREE.Vector3(pos[k], pos[k + 1], pos[k + 2]); };
+  const nor = new Float32Array(M * C * 3);
   const midY = (P(0, 0).y + P(0, M - 1).y) / 2;
-  for (let j = 0; j < M; j++) for (let i = 0; i < N; i++) {
+  for (let j = 0; j < M; j++) for (let i = 0; i < C; i++) {
     const du = P(i + 1, j).sub(P(i - 1, j));
     const dv = P(i, j + 1).sub(P(i, j - 1));
     let nv = new THREE.Vector3().crossVectors(dv, du);
     if (du.lengthSq() < 1e-10 || nv.lengthSq() < 1e-12) nv.set(0, P(i, j).y < midY ? -1 : 1, 0);
     nv.normalize();
-    nor.set([nv.x, nv.y, nv.z], (j * N + i) * 3);
+    nor.set([nv.x, nv.y, nv.z], (j * C + i) * 3);
   }
   const idx = [];
   for (let j = 0; j < M - 1; j++) for (let i = 0; i < N; i++) {
-    const a = j * N + i, b = (j + 1) * N + i, c = j * N + (i + 1) % N, d = (j + 1) * N + (i + 1) % N;
+    const i1 = seam ? i + 1 : (i + 1) % N;
+    const a = j * C + i, b = (j + 1) * C + i, c = j * C + i1, d = (j + 1) * C + i1;
     idx.push(a, b, c, c, b, d);
   }
-  const uv = new Float32Array(M * N * 2);
-  for (let j = 0; j < M; j++) for (let i = 0; i < N; i++) uv.set([i / N, vs ? vs[j] : j / (M - 1)], (j * N + i) * 2);
+  const uv = new Float32Array(M * C * 2);
+  for (let j = 0; j < M; j++) for (let i = 0; i < C; i++) uv.set([i / N, vs ? vs[j] : j / (M - 1)], (j * C + i) * 2);
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
@@ -193,28 +215,33 @@ function jarRings({ t0 = 0, t1 = 1, inset = 1, yBottom = 0, steps = 130 }) {
   return rings;
 }
 
+const LID_RIB = { v0: 0, v1: 0, count: 120 };   // where along the cap's profile the ribs run (filled in below)
 function lidGeometry() {
   const y0 = LID_Y0 * H, y1 = H + LID_TOP;
   const key = [
-    [NECK_R * 0.995, y0 + 0.014], [LID_R * 0.97, y0], [LID_R * 1.015, y0 + 0.01],
-    [LID_R * 1.025, y0 + 0.035], [LID_R * 1.0, y0 + 0.06], [LID_R, y1 - 0.045],
-    [LID_R * 0.985, y1 - 0.013], [LID_R * 0.95, y1 - 0.002], [LID_R * 0.86, y1], [0, y1]
+    [NECK_R * 0.995, y0 + 0.014], [LID_R * 0.97, y0], [LID_R * 1.022, y0 + 0.008],   // rolled bottom curl
+    [LID_R * 1.03, y0 + 0.028], [LID_R * 1.006, y0 + 0.048],
+    [LID_R * 1.0, y0 + 0.11],                                                        // smooth lower band
+    [LID_R * 1.0, y1 - 0.052],                                                       // ribbed upper band
+    [LID_R * 1.013, y1 - 0.033], [LID_R * 0.999, y1 - 0.011],                         // rolled top bead
+    [LID_R * 0.955, y1 - 0.001], [LID_R * 0.86, y1], [0, y1]                          // flat top
   ];
-  const pts = [];
+  const RIB_K = 5;
+  const pts = [], keyIdx = [];
   for (let k = 0; k < key.length - 1; k++) {
     const [r0, ya] = key[k], [r1, yb] = key[k + 1];
-    const n = Math.max(1, Math.ceil(Math.hypot(r1 - r0, yb - ya) / 0.01));
-    for (let q = 0; q < n; q++) { const f = q / n; pts.push([r0 + (r1 - r0) * f, ya + (yb - ya) * f, k === 4]); }
+    const n = Math.max(1, Math.ceil(Math.hypot(r1 - r0, yb - ya) / 0.008));
+    keyIdx[k] = pts.length;
+    for (let q = 0; q < n; q++) { const f = q / n; pts.push([r0 + (r1 - r0) * f, ya + (yb - ya) * f]); }
   }
-  pts.push([0, y1, false]);
+  keyIdx[key.length - 1] = pts.length;
+  pts.push([0, y1]);
   const vs = [0];
   for (let k = 1; k < pts.length; k++) vs.push(vs[k - 1] + Math.hypot(pts[k][0] - pts[k - 1][0], pts[k][1] - pts[k - 1][1]));
   const total = vs[vs.length - 1];
-  const rings = pts.map(([r, y, knurled]) => (phi) => {
-    const kn = knurled ? 1 + 0.006 * Math.cos(phi * 150) : 1;
-    return new THREE.Vector3(Math.cos(phi) * r * kn, y, Math.sin(phi) * r * kn);
-  });
-  return buildRingSurface(rings, 300, vs.map(v => v / total));
+  LID_RIB.v0 = vs[keyIdx[RIB_K]] / total; LID_RIB.v1 = vs[keyIdx[RIB_K + 1]] / total;
+  const rings = pts.map(([r, y]) => (phi) => new THREE.Vector3(Math.cos(phi) * r, y, Math.sin(phi) * r));
+  return buildRingSurface(rings, 360, vs.map(v => v / total), true);
 }
 
 // label keeps its true proportions even though the jar got taller
@@ -367,7 +394,7 @@ function honeyMaterialLite({ thin, thick, planes, side = THREE.DoubleSide }) {
 // Glass: only the reflection is added on top (glass reflects about 4% head-on, much more at grazing angles)
 const glassReflMat = new THREE.MeshPhysicalMaterial({
   color: new THREE.Color(0, 0, 0), roughness: 0.03, metalness: 0, ior: 1.5, specularIntensity: 1,
-  envMapIntensity: 0.6, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+  envMap: studioEnv, envMapIntensity: 0.9, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
 });
 // ...plus a faint grey-green that thickens at the edges, where you look through more glass
 const glassTintMat = new THREE.MeshStandardMaterial({
@@ -380,29 +407,36 @@ glassTintMat.onBeforeCompile = (sh) => {
      { float e = 1.0 - abs( dot( normalize( vNormal ), normalize( vViewPosition ) ) );
        diffuseColor.a = opacity + 0.65 * pow( e, 2.5 ); }`);
 };
-// brushed / spun aluminium: fine concentric streaks in roughness and a hint of bump
-const brushTex = (() => {
-  const c = document.createElement('canvas'); c.width = 8; c.height = 2048;
-  const g = c.getContext('2d');
-  for (let y = 0; y < 2048; y++) {
-    const v = 0.30 + 0.12 * (Math.random() - 0.5) + 0.06 * Math.sin(y * 0.9) * Math.random();
-    const k = Math.round(clamp(v, 0, 1) * 255);
-    g.fillStyle = new THREE.Color().setRGB(k / 255, k / 255, k / 255, THREE.SRGBColorSpace).getStyle(); g.fillRect(0, y, 8, 1);   // grey streaks (roughness data)
+// white-painted metal cap (like the product shots): enamel over steel, faint spun texture under a glossy clear coat
+// fine vertical ribs on the cap's upper band (a height map: light = raised), and a whisper of spun texture
+const lidGeo = lidGeometry();
+const ribTex = (() => {
+  const W = 2048, Hh = 256, c = document.createElement('canvas'); c.width = W; c.height = Hh;
+  const g = c.getContext('2d'), img = g.createImageData(W, Hh), d = img.data;
+  const yA = (1 - LID_RIB.v1) * Hh, yB = (1 - LID_RIB.v0) * Hh;          // canvas rows (textures are flipped)
+  for (let y = 0; y < Hh; y++) {
+    const band = Math.min(1, Math.max(0, Math.min(y - yA, yB - y) / 3 + 0.5)); // soft 3px ends
+    for (let x = 0; x < W; x++) {
+      const ph = (x / W) * LID_RIB.count, f = ph - Math.floor(ph);
+      const rib = Math.pow(Math.sin(Math.PI * f), 0.6);                      // rounded ridges, narrow valleys
+      const v = Math.round(255 * (0.5 + band * (rib - 0.6) * 0.8 + (Math.random() - 0.5) * 0.02));
+      const k = (y * W + x) * 4; d[k] = d[k + 1] = d[k + 2] = v; d[k + 3] = 255;
+    }
   }
-  const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 3);
+  g.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c); t.anisotropy = 4;
   return t;
 })();
-// white-painted metal cap (like the product shots): enamel over steel, faint spun texture under a glossy clear coat
+// white enamel over metal: glossy clear coat, cool tone, crisp studio highlights, ribs catching the light
 const lidMat = new THREE.MeshPhysicalMaterial({
-  color: tok('--j3-lid'), metalness: 0.15, roughness: 1.0, roughnessMap: brushTex,
-  bumpMap: brushTex, bumpScale: 0.08, clearcoat: 0.55, clearcoatRoughness: 0.18, envMapIntensity: 0.85,
+  color: tok('--j3-lid'), metalness: 0.03, roughness: 0.3, bumpMap: ribTex, bumpScale: 1.0,
+  clearcoat: 1.0, clearcoatRoughness: 0.07, envMap: studioEnv, envMapIntensity: 1.0,
 });
 
 // lighter versions of the cap and glass for older phones (no clear coat / physical extras)
-const lidMatLite = new THREE.MeshStandardMaterial({ color: tok('--j3-lid'), metalness: 0.15, roughness: 0.38, envMapIntensity: 0.85 });
+const lidMatLite = new THREE.MeshStandardMaterial({ color: tok('--j3-lid'), metalness: 0.03, roughness: 0.22, bumpMap: ribTex, bumpScale: 1.0, envMap: studioEnv, envMapIntensity: 1.0 });
 const glassReflLite = new THREE.MeshStandardMaterial({
-  color: new THREE.Color(0, 0, 0), roughness: 0.04, metalness: 0, envMapIntensity: 0.6, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
+  color: new THREE.Color(0, 0, 0), roughness: 0.04, metalness: 0, envMap: studioEnv, envMapIntensity: 0.9, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
 });
 
 let labelLoaded; const labelReady = new Promise((r) => { labelLoaded = r; });
@@ -430,7 +464,6 @@ labelBackMat.onBeforeCompile = (sh) => {
 const HONEY_T0 = 0.008, HONEY_T1 = 0.985;
 const glassGeo = buildRingSurface(jarRings({}), 160);
 const honeyGeo = buildRingSurface(jarRings({ t0: HONEY_T0, t1: HONEY_T1, inset: GLASS_IN, yBottom: HONEY_T0 * H }), 160);
-const lidGeo = lidGeometry();
 const labelGeo = labelGeometry();
 const bubbleGeo = new THREE.SphereGeometry(1, 10, 8);
 const shadowTex = (() => {
@@ -681,6 +714,7 @@ function measure() {
     const el = document.querySelector('.hero ' + sel);
     const clip = rel(el.getBoundingClientRect());
     const innerH = el.firstElementChild.getBoundingClientRect().height;
+    const lift = new DOMMatrixReadOnly(getComputedStyle(el.firstElementChild).transform).m42 || 0;   // reveal still under way
     const glyphs = [];
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
     const range = document.createRange();
@@ -698,11 +732,11 @@ function measure() {
         range.setStart(node, i); range.setEnd(node, i + 1);
         const r = range.getBoundingClientRect();
         if (!r.width) continue;
-        glyphs.push({ ch, w: r.width, h: r.height, x: r.left - sr.left, y: r.top - sr.top + (r.height - (asc + desc)) / 2 + asc, font, color });
+        glyphs.push({ ch, w: r.width, h: r.height, x: r.left - sr.left, y: r.top - sr.top - lift + (r.height - (asc + desc)) / 2 + asc, font, color });
       }
     }
     const hl = el.querySelector('.hl');
-    lines.push({ clip, innerH, glyphs, delay, hlRects: hl ? [...hl.getClientRects()].map(rel) : [] });
+    lines.push({ clip, innerH, glyphs, delay, hlRects: hl ? [...hl.getClientRects()].map(rel).map((r) => ({ ...r, y: r.y - lift })) : [] });
   }
   L = {
     W: sr.width, H: sr.height, lines,
