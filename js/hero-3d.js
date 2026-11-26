@@ -83,7 +83,7 @@ const rim = new THREE.DirectionalLight(tok('--j3-light-rim'), 0.55); rim.positio
 // Silhouette traced from the WebstaurantStore studio photo of the empty jar.
 const A = 1.0;
 // Approved shape (traced Queenline, a hair taller), with the clear neck under the lid cut down.
-const H_TRACE = 2 * A / 0.545;
+const H_TRACE = 2 * A / 0.6;   // whole jar (cap included) = 3 5/16 : 5 9/16, the Queenline's real width : height
 const SH0 = 0.61 * H_TRACE, SH1 = 0.865 * H_TRACE, LID0 = 0.922 * H_TRACE;
 const SHOULDER_SQUASH = 1.0;    // shoulder exactly as traced (the approved shape)
 const NECK_SHOW = 0.15;         // neck finish under the cap (~6mm): thread ridge, glass lip (bead), neck, then the shoulder
@@ -253,7 +253,7 @@ function lidGeometry() {
 }
 
 // label keeps its true proportions even though the jar got taller
-const LABEL_X = 0.745, LABEL_H = 2 * 0.745 / 0.666, LABEL_TC = 0.41;  // label art is 0.666 wide:tall; ~6% bigger and lower, like the photos
+const LABEL_X = 0.745, LABEL_H = 2 * 0.745 / 0.666, LABEL_TC = 0.43;  // label art is 0.666 wide:tall; ~6% bigger and lower, like the photos
 const LABEL_T0 = LABEL_TC - LABEL_H / 2 / H, LABEL_T1 = LABEL_TC + LABEL_H / 2 / H;
 function labelGeometry() {
   const nx = 40, ny = 60, pos = [], uv = [], idx = [];
