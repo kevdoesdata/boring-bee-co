@@ -35,6 +35,14 @@ If a phone runs slower than expected it steps down a version on its own.
 To try a version on purpose, add `#tier=full`, `#tier=phone`, `#tier=lite` or `#tier=photo`
 to the URL and reload. 3D material colours live in the token block (`--j3-*`).
 
+**Off switch:** set `HERO_3D = false` at the top of `js/hero-tier.js` and push. Everyone gets the
+photos and the 3D files are never downloaded (`#tier=full` still shows the 3D, for testing).
+
+**After changing any CSS or JS file,** bump the `?v=` on the `styles.css`, `hero-tier.js` and
+`main.js` links in `index.html`, so returning visitors don't mix new and cached files
+(GitHub Pages lets browsers keep files for about 10 minutes). `hero-3d.js` picks up the same
+version from `hero-tier.js`. Files in `js/vendor/` never change, so they carry no version.
+
 ## Preview locally
 
 ```

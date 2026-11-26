@@ -14,7 +14,7 @@ const BB = window.BB;
 if (BB.tier === 'phone' && BB.lowBattery && !BB.forced) { BB.tier = 'lite'; BB.why.push('battery under 20%'); BB.updatePill(); }
 let TIER = BB.tier;                                  // 'full' | 'phone' | 'lite'
 const QUALITY = {
-  full:  { dpr: 1.75, volStep: 0.12, substeps: 4, bubbles: 1.0,  label: 'images/label.webp',    halfRateIdle: false, halfRate: false },
+  full:  { dpr: 1.75, volStep: 0.12, substeps: 4, bubbles: 1.0,  label: 'images/label.webp',    halfRateIdle: true,  halfRate: false },
   phone: { dpr: 1.5,  volStep: 0.15, substeps: 4, bubbles: 0.7,  label: 'images/label-sm.webp', halfRateIdle: true,  halfRate: false },
   lite:  { dpr: 1.25, volStep: 0.2,  substeps: 2, bubbles: 0.35, label: 'images/label-sm.webp', halfRateIdle: true,  halfRate: true },
 };
@@ -1222,6 +1222,31 @@ toast.addEventListener('click', (e) => {
   setTimeout(() => { t.classList.remove('arrive'); void t.offsetWidth; t.classList.add('arrive'); }, 650);
 });
 
+// =================== keyboard ===================
+// With the 3D on, the photo links stay in the page (same spots, same names) but sit hidden under the canvas.
+// When one gets keyboard focus, a ring is drawn around its 3D jar, above the canvas, with its shop tag;
+// Enter follows the link as before.
+const focusRing = document.createElement('div');
+focusRing.className = 'jar-focus'; focusRing.setAttribute('aria-hidden', 'true');
+stage.appendChild(focusRing);
+let focusJar = null;
+function placeFocusRing() {
+  if (!focusJar || !L) return;
+  const j = focusJar, w = 2 * A * S + 22, h = TOTAL_H * S + 22;
+  const x = L.W / 2 + j.group.position.x * S, y = HOME_PY - j.group.position.y * S;
+  focusRing.style.width = w + 'px'; focusRing.style.height = h + 'px';
+  focusRing.style.left = (x - w / 2) + 'px'; focusRing.style.top = (y - h / 2) + 'px';
+}
+[...jarSlot.querySelectorAll('a')].forEach((link, i) => {
+  link.addEventListener('focus', () => {
+    if (!document.documentElement.classList.contains('gl-on') || !jars[i]) return;
+    let keyboard = true; try { keyboard = link.matches(':focus-visible'); } catch (e) { /* older browsers */ }
+    if (!keyboard) return;
+    focusJar = jars[i]; placeFocusRing(); focusRing.classList.add('on'); showToast(jars[i], true);
+  });
+  link.addEventListener('blur', () => { if (focusJar === jars[i]) { focusJar = null; focusRing.classList.remove('on'); } });
+});
+
 // =================== reset button ===================
 const resetBtn = document.getElementById('resetBtn');
 function jarDisplaced(j, t) {
@@ -1273,7 +1298,7 @@ function driftPx(j, now) {
 const _upw = new THREE.Vector3(), _shM = new THREE.Matrix4();
 let lastT = 0, frameNo = 0, running = false, dead = false, shown = false, onScreen = true;
 function isIdle() {
-  if (active || pending) return false;
+  if (active || pending || hovered) return false;
   for (const j of jars) {
     if (j.grab || j.resetting || j.v.lengthSq() > 0.003 || j.wB.lengthSq() > 0.01) return false;
     if (Math.abs(j.p.x - j.home.x) > 0.02 || Math.abs(j.p.y - j.home.y) > 0.02) return false;
@@ -1325,6 +1350,7 @@ function animate(now) {
   collide(jars[0], jars[1], now);
   updateResetButton(t);
   poseJars(now, t, dt);
+  placeFocusRing();
   renderer.render(scene, camera);
 }
 
@@ -1388,6 +1414,7 @@ function stepDown(to, reason) {
 }
 function giveUp(reason) {        // back to the still photos for good
   dead = true; running = false;
+  focusJar = null; focusRing.classList.remove('on');
   resetBtn.classList.remove('on'); toast.classList.remove('on');
   BB.back2D(reason);
 }

@@ -6,7 +6,14 @@
    Browsers don't say how old a phone is, so this reads the clues they do give; js/hero-3d.js also steps down
    a level if the phone turns out slower than it looked. The photos are the first paint for everyone, and the 3D
    fades in over them once it's ready. To try a tier on purpose, add #tier=full|phone|lite|photo to the URL. */
+
+// OFF SWITCH: set to false to show the still photos to everyone (the 3D files are then never downloaded).
+// #tier=full in the URL still shows the 3D, for testing a fix before switching it back on.
+var HERO_3D = true;
+
 (function () {
+  // this script's ?v= (cache-busting) is passed on to the 3D file it loads
+  var self = document.currentScript, V = self && self.src.indexOf('?') > 0 ? self.src.slice(self.src.indexOf('?')) : '';
   var nav = navigator, ua = nav.userAgent || '', html = document.documentElement;
   var mm = function (q) { return matchMedia(q).matches; };
   var why = [], cutoff = new Date().getFullYear() - 5;
@@ -43,6 +50,7 @@
   if (nav.connection && nav.connection.saveData) { tier = 'photo'; why.push('data saver on'); }
   if (mm('(prefers-reduced-motion: reduce)')) { tier = 'photo'; why.push('reduce motion on'); }
   if (!gl) { tier = 'photo'; why.push('no 3D graphics'); }
+  if (!HERO_3D) { tier = 'photo'; why.push('3D switched off'); }
   if (typeof Promise === 'undefined' || !('noModule' in document.createElement('script'))) { tier = 'photo'; why.push('old browser'); }
 
   var forced = (location.hash.match(/tier=(full|phone|lite|photo)/) || [])[1] || null;
@@ -76,17 +84,14 @@
     html.classList.remove('gl-on', 'gl-ready', 'tier-full', 'tier-phone', 'tier-lite'); html.classList.add('tier-photo');
   };
 
-  // load the 3D; on phones, only once the page and photos are done
+  // load the 3D only once the page and photos are done (desktop right after, phones when the browser is idle)
   var load = function () {
-    import(new URL('js/hero-3d.js', document.baseURI).href).catch(function (e) {
+    import(new URL('js/hero-3d.js' + V, document.baseURI).href).catch(function (e) {
       console.warn('3D jars failed to load; keeping the photos', e); BB.back2D('3D failed to load');
     });
   };
-  if (BB.tier === 'full') load();
-  else {
-    var later = function () { window.requestIdleCallback ? requestIdleCallback(load, { timeout: 1500 }) : setTimeout(load, 300); };
-    document.readyState === 'complete' ? later() : addEventListener('load', later, { once: true });
-  }
+  var later = function () { window.requestIdleCallback ? requestIdleCallback(load, { timeout: BB.tier === 'full' ? 500 : 1500 }) : setTimeout(load, 300); };
+  document.readyState === 'complete' ? later() : addEventListener('load', later, { once: true });
 
   function gpuAge(r) {
     var m, Y, n;

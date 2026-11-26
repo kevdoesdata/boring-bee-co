@@ -305,6 +305,8 @@ main{position:relative}
 .toast{position:absolute;z-index:6;left:0;top:0;font:500 var(--fs-label) var(--sans);color:var(--ink);text-decoration:none;background:var(--cream-light);border:1px solid var(--ln);border-radius:var(--r-pill);padding:.32rem .75rem;opacity:0;transform:translate(-50%,6px);transition:opacity .35s,transform .35s;pointer-events:none;white-space:nowrap}
 .toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
 .toast i{display:inline-block;width:.5rem;height:.5rem;margin-right:.4rem;background:var(--leaf);clip-path:polygon(25% 3%,75% 3%,100% 50%,75% 97%,25% 97%,0 50%)}
+.jar-focus{position:absolute;z-index:5;left:0;top:0;box-sizing:border-box;border:2px solid var(--leaf);border-radius:22px;pointer-events:none;opacity:0;transition:opacity .2s ease}
+.jar-focus.on{opacity:1}
 .reset{position:absolute;z-index:6;left:0;top:0;display:inline-flex;align-items:center;gap:.42rem;height:30px;box-sizing:border-box;padding:0 .8rem 0 .62rem;border:1px solid var(--ln);border-radius:var(--r-pill);background:var(--cream-light);color:var(--ink);font:500 var(--fs-label) var(--sans);letter-spacing:0;white-space:nowrap;cursor:pointer;
 box-shadow:0 1px 3px color-mix(in srgb,var(--ink-brown) 8%,transparent);opacity:0;transform:translate(-50%,-50%) translateY(6px);pointer-events:none;-webkit-tap-highlight-color:transparent;
 transition:opacity .35s ease,transform .5s var(--ease-honey),border-color .25s ease}
