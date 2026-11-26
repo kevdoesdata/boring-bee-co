@@ -61,7 +61,8 @@ var HERO_3D = true;
     updatePill: function () {},                                           // (the preview's tier pill; nothing here)
   };
   html.classList.add('tier-' + BB.tier);
-  if (phone && nav.getBattery) nav.getBattery().then(function (b) { if (!b.charging && b.level <= 0.2) BB.lowBattery = true; }).catch(function () {});
+  // battery (Chrome-family browsers only): under 20% and not charging -> lighter jars; the 3D keeps watching it
+  if (phone && nav.getBattery) BB.battery = nav.getBattery().then(function (b) { if (!b.charging && b.level <= 0.2) BB.lowBattery = true; return b; }).catch(function () { return null; });
   if (BB.tier === 'photo') return;
 
   // the 3D waits for the page's own entrance (headline "up", jars "rise") before taking over

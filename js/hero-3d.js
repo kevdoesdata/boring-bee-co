@@ -1380,6 +1380,7 @@ new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; sync(); }).obse
 document.addEventListener('visibilitychange', sync);
 
 // ---------- speed check: if a phone turns out slower than it looked, step down (phone -> lite -> photos) ----------
+// This is also the iPhone battery check: Safari can't report the battery, but Low Power Mode caps it at 30 fps, which lands here.
 const watchState = { from: 0, last: 0, gaps: [], done: false };
 function watch(now) {
   if (TIER === 'full' || watchState.done) return;
@@ -1393,6 +1394,7 @@ function watch(now) {
   const fps = Math.round(1000 / gap);
   if (TIER === 'phone' && gap > 30) stepDown('lite', 'ran at ' + fps + ' fps');
   else if (TIER === 'lite' && gap > 48) stepDown('photo', 'ran at ' + fps + ' fps');
+  else if (TIER === 'phone') watchState.from = now + 8000;           // phones: look again every ~10 s (Low Power Mode can come on mid-visit)
   else watchState.done = true;
 }
 function stepDown(to, reason) {
@@ -1435,6 +1437,13 @@ sync();
 await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 BB.show3D();
 BB.updatePill();
+
+// battery (Chrome-family browsers): if a phone drops to 20% or unplugs at 20% or less while the hero is up, lighter jars
+if (BB.battery) BB.battery.then((b) => {
+  if (!b) return;
+  const check = () => { if (TIER === 'phone' && !BB.forced && !dead && !b.charging && b.level <= 0.2) stepDown('lite', 'battery under 20%'); };
+  b.addEventListener('levelchange', check); b.addEventListener('chargingchange', check); check();
+});
 
 let rt = 0;
 window.addEventListener('resize', () => {
