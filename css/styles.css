@@ -43,19 +43,20 @@
   --shadow-soft:0 2px 8px color-mix(in srgb,var(--ink-brown) 16%,transparent);
 
   /* 3D hero jars (js/hero-3d.js reads these): materials and texture paint, not for UI */
-  --j3-honey-spring:#d48042;  /* light honey seen through the glass */
-  --j3-honey-fall:#733626;    /* dark honey seen through the glass */
-  --j3-lid:#ecebe6;           /* white enamel over metal: the cap */
-  --j3-glass-tint:#8d9b8a;    /* faint grey-green at the glass edges */
-  --j3-wax:#f3e1a2; --j3-wax-dark:#d9bf78;
+  --j3-honey-spring:#eaa24a;  /* light honey seen through the glass (dense: deep amber in the middle) */
+  --j3-honey-fall:#733626;    /* dark honey seen through the glass (nearly black in the middle) */
+  --j3-base-spring:#d88a30; --j3-base-fall:#b04a22;   /* thick clear glass floor, lit by the honey above it */
+  --j3-lid:#f3f4f4;           /* white enamel over metal: the cap */
+  --j3-glass-tint:#c49a6c;    /* faint warm tint right at the glass outline */
+  --j3-wax:#f6e6b0; --j3-wax-dark:#dcc283; --j3-comb-tint:#e6d6bf;
   --j3-cap-hi:#fbf1cf; --j3-cap-lo:#e2c983;                         /* capped comb cells */
-  --j3-cell-deep:#c8842a; --j3-cell-mid:#dca04a; --j3-cell-rim:#e9bd63; /* honey-filled cells */
-  --j3-cell-shine:rgba(255,248,225,.55); --j3-comb-cut:#d99a3e;
+  --j3-cell-deep:#b26a24; --j3-cell-mid:#cb8c3c; --j3-cell-rim:#ddaa5c; /* honey-filled cells */
+  --j3-cell-shine:rgba(255,244,214,.4); --j3-comb-cut:#c98a36;
   --j3-speck:#3b2410; --j3-bubble:#fff6e2;
   --j3-shadow-soft:var(--molasses); --j3-shadow-core-spring:#6b3410; --j3-shadow-core-fall:var(--molasses);  /* soft shadow + contact core (warmer under light honey) */
   --j3-light-sky:#fff1dc; --j3-light-ground:#7a5a3a; --j3-light-key:#fff2e2; --j3-light-rim:#ffe8cc;
   --j3-studio-room:#2a2622; --j3-studio-light:#fff8ef;  /* product-photo studio: reflected in the glass and cap only */
-  --j3-white:#fff; --j3-bump-cap:#bbb; --j3-bump-cell:#222; --j3-bump-cut:#333;  /* comb relief (bump map greys) */
+  --j3-white:#fff; --j3-black:#000; --j3-bump-cap:#bbb; --j3-bump-cell:#222; --j3-bump-cut:#333;  /* comb relief and outline mask (greys) */
 }
 /* tokens:end */
 *{box-sizing:border-box}

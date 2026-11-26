@@ -52,9 +52,10 @@ function buildEnvironment() {
   return env;
 }
 scene.environment = buildEnvironment();
-// A product-photo studio, used only by the shiny parts (glass reflections, the cap): a dim room with tall
-// softboxes left and right and one overhead, so the glass picks up the long vertical streaks the product shots
-// have and the cap gets crisp, cool highlights. Honey and label keep the softer room light, so their colours stay.
+// A product-photo studio, used only by the shiny parts (glass reflections, the cap), lit like the hero shots:
+// one big soft box front-left (the broad streak down the left side), a weaker one front-right, a strip overhead
+// (the line across the top of the shoulder) and a low fill so the cap stays white. Nothing behind the jars, so the
+// glass no longer traces its own outline. Honey and label keep the softer room light, so their colours stay.
 function buildStudio() {
   const pmrem = new THREE.PMREMGenerator(renderer);
   const s = new THREE.Scene();
@@ -64,10 +65,10 @@ function buildStudio() {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: light.clone().multiplyScalar(k), side: THREE.DoubleSide }));
     m.position.set(x, y, z); m.lookAt(0, 0, 0); s.add(m);
   };
-  softbox(1.4, 9, -7, 0.5, -1.5, 7);    // tall strip, left and a little behind: the streak down the left side
-  softbox(1.4, 9, 7, 0.5, -2.5, 6);     // tall strip, right
-  softbox(8, 3, 0, 6.5, 1, 3.5);        // overhead: shoulder and cap-top highlights
-  softbox(7, 4, 0, -1, 8, 1.4);         // soft fill from the camera side, so the cap reads white, not grey
+  softbox(3.4, 8, -5.4, 1.4, 6.0, 5.5); // big soft box front-left: the one broad streak
+  softbox(2.4, 7, 5.8, 0.8, 5.2, 1.4);  // weaker front-right
+  softbox(7, 2.2, 0, 6.6, 3.2, 3.0);    // strip overhead, toward the front: shoulder line, cap top
+  softbox(6, 3, 0, -5, 7, 0.8);         // low front fill: keeps the cap white
   const env = pmrem.fromScene(s, 0.01).texture;
   pmrem.dispose();
   return env;
@@ -85,7 +86,7 @@ const A = 1.0;
 const H_TRACE = 2 * A / 0.545;
 const SH0 = 0.61 * H_TRACE, SH1 = 0.865 * H_TRACE, LID0 = 0.922 * H_TRACE;
 const SHOULDER_SQUASH = 1.0;    // shoulder exactly as traced (the approved shape)
-const NECK_SHOW = 0.11;         // clear neck between shoulder and lid: ~4.6mm, room for a clear glass lip under the cap
+const NECK_SHOW = 0.15;         // neck finish under the cap (~6mm): thread ridge, glass lip (bead), neck, then the shoulder
 function squashY(y) {
   if (y <= SH0) return y;
   if (y <= SH1) return SH0 + (y - SH0) * SHOULDER_SQUASH;
@@ -97,10 +98,10 @@ const H = squashY(H_TRACE);
 const yT = (tTrace) => squashY(tTrace * H_TRACE) / H;   // traced height fraction -> this jar's
 const DEPTH_RATIO = 0.62;       // 2 1/16 / 3 5/16: flat, not chubby
 const N_BODY = 3.0;             // rounded-rectangle cross-section (2 = plain oval)
-const NECK_R = 0.565 * A;       // neck finish is ~57% of the body width
-const LID_R = 0.61 * A;
+const NECK_R = 0.66 * A;        // neck finish ~66% of the body width, as in the hero shots
+const LID_R = 0.715 * A;        // cap band ~71% of the body width (the curl flares to ~74%)
 const LID_Y0 = yT(0.922);       // lid wraps the neck, bottom edge here (~13mm tall cap)
-const LID_TOP = 0.03;           // lid top sits just above the glass lip
+const LID_TOP = 0.055;          // cap height ~0.24 of its width, as in the photos
 const TOTAL_H = H + LID_TOP;
 const GLASS_IN = 0.988;         // honey sits inside a thin glass wall
 
@@ -108,10 +109,11 @@ const PROFILE_TRACE = [
   [0.000, 0.55], [0.008, 0.68], [0.020, 0.76], [0.040, 0.81], [0.070, 0.85],
   [0.110, 0.885], [0.140, 0.915], [0.180, 0.94], [0.220, 0.97], [0.280, 0.99],
   [0.320, 1.00], [0.480, 1.00], [0.530, 0.98], [0.570, 0.96], [0.610, 0.935],
-  [0.650, 0.90], [0.690, 0.85], [0.730, 0.81], [0.775, 0.745], [0.815, 0.68],
-  [0.845, 0.62], [0.865, 0.578], [0.880, 0.565], [0.887, 0.567], [0.895, 0.592], [0.902, 0.614], [0.911, 0.62],
-  [0.917, 0.613], [0.921, 0.582], [0.940, 0.565], [0.960, 0.578],
-  [0.975, 0.578], [0.990, 0.53], [1.000, 0.48]
+  [0.650, 0.90], [0.690, 0.85], [0.730, 0.81], [0.775, 0.745], [0.800, 0.728],
+  [0.815, 0.715], [0.830, 0.701], [0.845, 0.688], [0.855, 0.678], [0.865, 0.670], [0.875, 0.664], [0.885, 0.666],
+  [0.893, 0.676], [0.899, 0.703], [0.905, 0.712], [0.910, 0.702], [0.913, 0.684],   // glass lip (bead)
+  [0.917, 0.696], [0.920, 0.690], [0.922, 0.684],                                    // thread ridge, just under the cap
+  [0.940, 0.672], [0.960, 0.672], [0.975, 0.672], [0.990, 0.63], [1.000, 0.58]
 ];
 const PROFILE = PROFILE_TRACE.map(([t, w]) => [yT(t), w]);
 const profileFn = (() => {
@@ -156,7 +158,7 @@ function superPoint(phi, hw, hd, n) {
   const gl = Math.hypot(gx, gz) || 1;
   return { x, z, nx: gx / gl, nz: gz / gl };
 }
-const RIB_T0 = yT(0.08), RIB_T1 = yT(0.77), RIB_COUNT = 9, RIB_AMP = 0.024 * A;
+const RIB_T0 = yT(0.08), RIB_T1 = yT(0.77), RIB_COUNT = 9, RIB_AMP = 0.017 * A;   // ~0.7x the old depth, as in the photos
 function ribOffset(t, nx) {
   const band = smoothstep(RIB_T0, RIB_T0 + 0.04, t) * (1 - smoothstep(RIB_T1 - 0.04, RIB_T1, t));
   if (band <= 0) return 0;
@@ -220,18 +222,19 @@ function jarRings({ t0 = 0, t1 = 1, inset = 1, yBottom = 0, steps = 130, dome = 
 
 const LID_RIB = { v0: 0, v1: 0, count: 120 };   // where along the cap's profile the ribs run (filled in below)
 function lidGeometry() {
-  const y0 = LID_Y0 * H, y1 = H + LID_TOP;
+  const y0 = LID_Y0 * H, y1 = H + LID_TOP, hc = y1 - y0;
   const key = [
-    [NECK_R * 0.995, y0 + 0.014], [LID_R * 0.97, y0], [LID_R * 1.022, y0 + 0.008],   // rolled bottom curl
-    [LID_R * 1.03, y0 + 0.028], [LID_R * 1.006, y0 + 0.048],
-    [LID_R * 1.0, y0 + 0.11],                                                        // smooth lower band
-    [LID_R * 1.0, y1 - 0.052],                                                       // ribbed upper band
-    [LID_R * 1.013, y1 - 0.033], [LID_R * 0.999, y1 - 0.011],                         // rolled top bead
-    [LID_R * 0.965, y1 - 0.001], [LID_R * 0.93, y1],                                  // over the rim
-    [LID_R * 0.895, y1 - 0.006], [LID_R * 0.865, y1 - 0.016],                         // down the inner wall
-    [LID_R * 0.8, y1 - 0.021], [LID_R * 0.5, y1 - 0.026], [0, y1 - 0.029]             // dished top panel
+    [NECK_R * 1.0, y0 + 0.05 * hc], [LID_R * 0.975, y0],                               // tucked under, onto the glass
+    [LID_R * 1.028, y0 + 0.03 * hc], [LID_R * 1.035, y0 + 0.09 * hc],                 // rolled bottom curl, flared
+    [LID_R * 1.012, y0 + 0.15 * hc], [LID_R * 1.0, y0 + 0.20 * hc],
+    [LID_R * 1.006, y0 + 0.38 * hc], [LID_R * 0.996, y0 + 0.55 * hc],                // smooth band, gently barrelled
+    [LID_R * 0.984, y0 + 0.60 * hc],                                                  // small waist
+    [LID_R * 0.998, y0 + 0.64 * hc], [LID_R * 1.0, y0 + 0.89 * hc],                  // ribbed band (top third)
+    [LID_R * 0.984, y0 + 0.955 * hc], [LID_R * 0.952, y0 + 0.99 * hc], [LID_R * 0.915, y1],   // soft rounded crown
+    [LID_R * 0.885, y1 - 0.005], [LID_R * 0.866, y1 - 0.014],                         // down the inner wall
+    [LID_R * 0.8, y1 - 0.02], [LID_R * 0.5, y1 - 0.025], [0, y1 - 0.028]              // dished top panel
   ];
-  const RIB_K = 5;
+  const RIB_K = 9;
   const pts = [], keyIdx = [];
   for (let k = 0; k < key.length - 1; k++) {
     const [r0, ya] = key[k], [r1, yb] = key[k + 1];
@@ -250,7 +253,7 @@ function lidGeometry() {
 }
 
 // label keeps its true proportions even though the jar got taller
-const LABEL_X = 0.70, LABEL_H = 2 * 0.70 / 0.666, LABEL_TC = yT(0.44);  // label art is 0.666 wide:tall
+const LABEL_X = 0.745, LABEL_H = 2 * 0.745 / 0.666, LABEL_TC = 0.41;  // label art is 0.666 wide:tall; ~6% bigger and lower, like the photos
 const LABEL_T0 = LABEL_TC - LABEL_H / 2 / H, LABEL_T1 = LABEL_TC + LABEL_H / 2 / H;
 function labelGeometry() {
   const nx = 40, ny = 60, pos = [], uv = [], idx = [];
@@ -281,11 +284,42 @@ function labelGeometry() {
   return geo;
 }
 
-// ---------- honeycomb: a clean rectangular cut, cells at real size (~5mm) ----------
-const COMB_W = 1.1 * A, COMB_H = 0.6 * H_TRACE, COMB_D = 0.24 * A;
-const CELL = 0.126;                       // flat-to-flat cell width in world units (1 unit ≈ 42mm)
+// ---------- honeycomb: a big chunk cut to fit the jar, rough natural edges, cells at real size (~5mm) ----------
+// As in the real comb jar: it fills most of the jar (shoulder to near the base, close to both side walls) and
+// sits just behind the front glass, so its cells read crisply through a thin layer of honey.
+const COMB_D = 0.24 * A, COMB_ZF = 0.40;              // thickness; its front face ~0.2 behind the front glass
+const CELL = 0.1;                                     // flat-to-flat cell width (~4.2mm; the honey in front magnifies it to the photos' look)
 const WAX = tok('--j3-wax'), WAX_DARK = tok('--j3-wax-dark');
-const BUMP_HI = tok('--j3-white'), BUMP_CAP = tok('--j3-bump-cap'), BUMP_CELL = tok('--j3-bump-cell'), BUMP_CUT = tok('--j3-bump-cut');
+const BUMP_HI = tok('--j3-white'), BUMP_LO = tok('--j3-black'), BUMP_CAP = tok('--j3-bump-cap'), BUMP_CELL = tok('--j3-bump-cell'), BUMP_CUT = tok('--j3-bump-cut');
+const COMB = (() => {
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const yb = 0.11 * TOTAL_H, yt = yT(0.82) * H;
+  const ph = [0, 1, 2, 3, 4, 5].map(() => rnd() * 6.28);
+  const jag = (u, k) => 0.035 + 0.022 * Math.sin(u * 7.3 + ph[k]) + 0.012 * Math.sin(u * 19.1 + ph[k + 1]) + (rnd() < 0.08 ? 0.05 * rnd() : 0);
+  const xmax = (y) => {                                 // widest the comb can be at this height, at its front face
+    const { hw, hd, n } = section(y / H);
+    const a = hw * GLASS_IN, b = hd * GLASS_IN;
+    if (COMB_ZF >= b) return 0.05;
+    return Math.min(0.86, a * Math.pow(1 - Math.pow(COMB_ZF / b, n), 1 / n) * 0.94 - 0.03);
+  };
+  const pts = [], NS = 34;
+  for (let i = 0; i <= NS; i++) { const y = yb + (yt - yb) * i / NS; pts.push([xmax(y) - jag(y, 0), y]); }          // right edge, up
+  const xr = pts[pts.length - 1][0], xl = -(xmax(yt) - jag(yt, 2));
+  for (let i = 1; i < 14; i++) { const x = xr + (xl - xr) * i / 14; pts.push([x, yt - jag(x * 3, 2) - 0.02]); }     // ragged top
+  for (let i = NS; i >= 0; i--) { const y = yb + (yt - yb) * i / NS; pts.push([-(xmax(y) - jag(y, 4)), y]); }       // left edge, down
+  const xl0 = pts[pts.length - 1][0], xr0 = pts[0][0];
+  for (let i = 1; i < 12; i++) { const x = xl0 + (xr0 - xl0) * i / 12; pts.push([x, yb + jag(x * 3, 1) * 0.8]); }    // ragged bottom
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const box = { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+  // a soft mask of the outline, so the honey knows where it is thin (in front of the comb)
+  const mc = document.createElement('canvas'); mc.width = mc.height = 256;
+  const mg = mc.getContext('2d'); mg.fillStyle = BUMP_LO; mg.fillRect(0, 0, 256, 256);
+  mg.filter = 'blur(6px)'; mg.fillStyle = BUMP_HI; mg.beginPath();
+  pts.forEach(([x, y], i) => { const u = (x - box.x0) / (box.x1 - box.x0) * 256, v = (1 - (y - box.y0) / (box.y1 - box.y0)) * 256; i ? mg.lineTo(u, v) : mg.moveTo(u, v); });
+  mg.closePath(); mg.fill();
+  const mask = new THREE.CanvasTexture(mc);
+  return { pts, box, mask, boxV: new THREE.Vector4(box.x0, box.y0, box.x1, box.y1), zV: new THREE.Vector2(COMB_ZF, COMB_ZF - COMB_D) };
+})();
 function faceCanvas(wWorld, hWorld, pxPerWorld) {
   const c = document.createElement('canvas');
   c.width = Math.max(8, Math.round(wWorld * pxPerWorld)); c.height = Math.max(8, Math.round(hWorld * pxPerWorld));
@@ -297,15 +331,16 @@ function texPair(f) {
   const bump = new THREE.CanvasTexture(f.b);
   return { map, bump };
 }
-const PXW = 700;
-function combFrontTex() {          // looking into the cells: hexagon grid, most filled with honey, top rows capped
-  const f = faceCanvas(COMB_W, COMB_H, PXW), { g, gb } = f, W = f.c.width, Hh = f.c.height;
+const PXW = TIER === 'full' ? 600 : 420;
+function combFrontTex() {          // looking into the cells: pale wax walls, darker honey in the cells, a few capped
+  const bw = COMB.box.x1 - COMB.box.x0, bh = COMB.box.y1 - COMB.box.y0;
+  const f = faceCanvas(bw, bh, PXW), { g, gb } = f, W = f.c.width, Hh = f.c.height;
   g.fillStyle = WAX; g.fillRect(0, 0, W, Hh); gb.fillStyle = BUMP_HI; gb.fillRect(0, 0, W, Hh);
-  const w = CELL * PXW, r = w / Math.sqrt(3), pitch = 1.5 * r, wall = w * 0.07;
+  const w = CELL * PXW, r = w / Math.sqrt(3), pitch = 1.5 * r, wall = w * 0.11;
   const hex = (ctx, cx, cy, rad) => { ctx.beginPath(); for (let k = 0; k < 6; k++) { const a = Math.PI / 6 + k * Math.PI / 3; ctx.lineTo(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad); } ctx.closePath(); };
   for (let row = -1; row * pitch < Hh + r; row++) for (let col = -1; col * w < W + w; col++) {
     const cx = col * w + (row % 2 ? w / 2 : 0) + 0.3 * w, cy = row * pitch + 0.4 * r;
-    const capped = cy < Hh * 0.22 ? Math.random() < 0.75 : Math.random() < 0.08;
+    const capped = cy < Hh * 0.12 ? Math.random() < 0.6 : Math.random() < 0.04;
     hex(g, cx, cy, r - wall);
     if (capped) {
       const cg = g.createRadialGradient(cx - r * 0.2, cy - r * 0.25, r * 0.1, cx, cy, r);
@@ -315,43 +350,66 @@ function combFrontTex() {          // looking into the cells: hexagon grid, most
       const cg = g.createRadialGradient(cx, cy, r * 0.1, cx, cy, r);
       cg.addColorStop(0, tok('--j3-cell-deep')); cg.addColorStop(0.7, tok('--j3-cell-mid')); cg.addColorStop(1, tok('--j3-cell-rim'));
       g.fillStyle = cg; g.fill();
-      g.fillStyle = tok('--j3-cell-shine');           // glossy honey meniscus in each cell
-      g.beginPath(); g.ellipse(cx - r * 0.28, cy - r * 0.3, r * 0.22, r * 0.12, -0.6, 0, Math.PI * 2); g.fill();
+      g.fillStyle = tok('--j3-cell-shine');            // glossy honey meniscus in each cell
+      g.beginPath(); g.ellipse(cx - r * 0.28, cy - r * 0.3, r * 0.2, r * 0.1, -0.6, 0, Math.PI * 2); g.fill();
     }
     hex(gb, cx, cy, r - wall); gb.fillStyle = capped ? BUMP_CAP : BUMP_CELL; gb.fill();
   }
-  g.strokeStyle = WAX_DARK; g.lineWidth = 3; g.strokeRect(1.5, 1.5, W - 3, Hh - 3);
   return texPair(f);
 }
-function combSideTex(widthWorld, horizontal) {  // a cut side: the cells are tubes, so you see parallel wax walls + the centre midrib
-  const f = horizontal ? faceCanvas(widthWorld, COMB_H, PXW) : faceCanvas(COMB_W, widthWorld, PXW);
-  const { g, gb } = f, W = f.c.width, Hh = f.c.height;
+function combSideTex() {           // a cut edge: the cells are tubes running front to back, with the midrib down the middle
+  const f = faceCanvas(1, COMB_D, PXW), { g, gb } = f, W = f.c.width, Hh = f.c.height;
   g.fillStyle = tok('--j3-comb-cut'); g.fillRect(0, 0, W, Hh); gb.fillStyle = BUMP_CUT; gb.fillRect(0, 0, W, Hh);
-  const step = horizontal ? 1.5 * (CELL / Math.sqrt(3)) * PXW : (CELL / 2) * PXW;
-  const n = Math.ceil((horizontal ? Hh : W) / step) + 1;
+  const step = 0.866 * CELL * PXW, n = Math.ceil(W / step) + 1;
   for (let i = 0; i < n; i++) {
-    const p = i * step + step * 0.3, th = Math.max(2, step * 0.14);
-    g.fillStyle = WAX; gb.fillStyle = BUMP_HI;
-    if (horizontal) { g.fillRect(0, p, W, th); gb.fillRect(0, p, W, th); }
-    else { g.fillRect(p, 0, th, Hh); gb.fillRect(p, 0, th, Hh); }
+    const p = i * step + step * 0.3, th = Math.max(2, step * 0.16);
+    g.fillStyle = WAX; gb.fillStyle = BUMP_HI; g.fillRect(p, 0, th, Hh); gb.fillRect(p, 0, th, Hh);
   }
-  g.fillStyle = WAX_DARK; gb.fillStyle = BUMP_HI;  // midrib down the middle of the slab's thickness
-  if (horizontal) { g.fillRect(W / 2 - 2, 0, 4, Hh); gb.fillRect(W / 2 - 2, 0, 4, Hh); }
-  else { g.fillRect(0, Hh / 2 - 2, W, 4); gb.fillRect(0, Hh / 2 - 2, W, 4); }
-  return texPair(f);
+  g.fillStyle = WAX_DARK; gb.fillStyle = BUMP_HI; g.fillRect(0, Hh / 2 - 2, W, 4); gb.fillRect(0, Hh / 2 - 2, W, 4);
+  const t = texPair(f);
+  for (const k of ['map', 'bump']) { t[k].wrapS = THREE.RepeatWrapping; }
+  return t;
 }
 function makeComb() {
-  const mk = (t) => new THREE.MeshStandardMaterial({ map: t.map, bumpMap: t.bump, bumpScale: 1.2, roughness: 0.42, metalness: 0, envMapIntensity: 0.7 });
-  const side = mk(combSideTex(COMB_D, true)), topb = mk(combSideTex(COMB_D, false));
-  const front = mk(combFrontTex()), back = mk(combFrontTex());
-  // BoxGeometry material order: +x, -x, +y, -y, +z, -z
-  return new THREE.Mesh(new THREE.BoxGeometry(COMB_W, COMB_H, COMB_D), [side, side, topb, topb, front, back]);
+  const { box } = COMB, bw = box.x1 - box.x0, bh = box.y1 - box.y0;
+  const shape = new THREE.Shape(COMB.pts.map(([x, y]) => new THREE.Vector2(x, y)));
+  const V2 = THREE.Vector2;
+  const uvGen = {
+    generateTopUV(g, v, a, b, c) { const f = (i) => new V2((v[i * 3] - box.x0) / bw, (v[i * 3 + 1] - box.y0) / bh); return [f(a), f(b), f(c)]; },
+    generateSideWallUV(g, v, a, b, c, d) {
+      const P = (i) => [v[i * 3], v[i * 3 + 1], v[i * 3 + 2]];
+      const [pa, pb, pc, pd] = [P(a), P(b), P(c), P(d)];
+      const k = Math.abs(pa[1] - pb[1]) < Math.abs(pa[0] - pb[0]) ? 0 : 1;          // run along x or along y
+      return [pa, pb, pc, pd].map(q => new V2(q[k], 1 - q[2] / COMB_D));
+    },
+  };
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: COMB_D, bevelEnabled: false, curveSegments: 1, UVGenerator: uvGen });
+  const mk = (t) => new THREE.MeshStandardMaterial({ color: tok('--j3-comb-tint'), map: t.map, bumpMap: t.bump, bumpScale: 1.2, roughness: 0.42, metalness: 0, envMapIntensity: 0.5 });
+  const mesh = new THREE.Mesh(geo, [mk(combFrontTex()), mk(combSideTex())]);
+  mesh.position.z = COMB_ZF - COMB_D;
+  return mesh;
 }
 
 // ---------- materials ----------
-// Honey: real light transmission. Thickness grows toward the silhouette, so the
-// middle reads deep and luminous and the edges go darker, like the product photos.
-function honeyMaterial({ att, dist, rough, planes, side = THREE.FrontSide }) {
+// Honey: real light transmission. The path through the honey is longest straight through the middle and falls
+// to almost nothing at the outline, so the honey reads dense and deep in the middle with a thin warm glow at the
+// edge, like the photos. In front of the comb only a thin layer of honey sits between it and the glass.
+function combUniforms(sh, comb) {
+  sh.uniforms.combMask = { value: comb ? COMB.mask : null };
+  sh.uniforms.combBox = { value: comb ? COMB.boxV : new THREE.Vector4(0, 0, 1, 1) };
+  sh.uniforms.combZ = { value: comb ? COMB.zV : new THREE.Vector2(9, 9) };
+  sh.uniforms.hasComb = { value: comb ? 1 : 0 };
+  sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vLocal;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\n  vLocal = transformed;');
+  sh.fragmentShader = sh.fragmentShader.replace('#include <common>',
+    '#include <common>\nvarying vec3 vLocal;\nuniform sampler2D combMask; uniform vec4 combBox; uniform vec2 combZ; uniform float hasComb;\n' +
+    'float combAt(out float d) { d = 9.0; if (hasComb < 0.5) return 0.0;\n' +
+    '  vec2 u = (vLocal.xy - combBox.xy) / (combBox.zw - combBox.xy);\n' +
+    '  if (u.x <= 0.0 || u.y <= 0.0 || u.x >= 1.0 || u.y >= 1.0) return 0.0;\n' +
+    '  d = vLocal.z > 0.0 ? max(vLocal.z - combZ.x, 0.0) : max(combZ.y - vLocal.z, 0.0);\n' +
+    '  return texture2D(combMask, u).r; }\n');
+}
+function honeyMaterial({ att, dist, rough, planes, side = THREE.FrontSide, comb = false }) {
   const m = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(1, 1, 1), metalness: 0, roughness: rough,
     transmission: 1, thickness: 1.2, ior: 1.49,
@@ -360,17 +418,30 @@ function honeyMaterial({ att, dist, rough, planes, side = THREE.FrontSide }) {
     clippingPlanes: planes || null,
   });
   m.onBeforeCompile = (sh) => {
+    combUniforms(sh, comb);
     sh.fragmentShader = sh.fragmentShader.replace('#include <transmission_fragment>',
       THREE.ShaderChunk.transmission_fragment.replace('material.thickness = thickness;',
-        'material.thickness = thickness * ( 0.8 + 0.5 * pow( 1.0 - clamp( abs( dot( normal, normalize( vViewPosition ) ) ), 0.0, 1.0 ), 2.0 ) );'));
+        `float ndv = clamp( abs( dot( normal, normalize( vViewPosition ) ) ), 0.0, 1.0 );
+         float th = thickness * ( 0.1 + 1.9 * pow( ndv, 0.6 ) );
+         float cd; float cm = combAt( cd );
+         th = mix( th, min( th, 0.35 * thickness + 1.9 * thickness * cd ), cm );
+         material.thickness = th;`));
   };
+  m.customProgramCacheKey = () => 'honey' + (comb ? 'C' : '');
   return m;
 }
+// the clear glass floor under the honey: thick glass, tinted by the honey above it
+function baseGlassMaterial(att, dist) {
+  return new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(1, 1, 1), metalness: 0, roughness: 0.05, transmission: 1, thickness: 0.6, ior: 1.5,
+    attenuationColor: new THREE.Color(att), attenuationDistance: dist, specularIntensity: 0.6, envMapIntensity: 0.7,
+  });
+}
 // Older phones: no see-through (transmission) pass, which draws the scene twice. Instead the honey multiplies
-// whatever is behind it by its colour, the way tinted glass (or real honey) darkens what you see through it,
-// darker toward the edges where you look through more of it. Colours are screen values (sRGB, 0-1).
-function honeyMaterialLite({ thin, thick, planes, side = THREE.DoubleSide }) {
-  return new THREE.ShaderMaterial({
+// whatever is behind it by its colour, the way tinted glass (or real honey) darkens what you see through it:
+// dense through the middle, light only at the outline and in front of the comb. Colours are screen values (sRGB, 0-1).
+function honeyMaterialLite({ thin, thick, planes, side = THREE.DoubleSide, comb = false }) {
+  const m = new THREE.ShaderMaterial({
     uniforms: { thin: { value: new THREE.Vector3(...thin) }, thick: { value: new THREE.Vector3(...thick) } },
     vertexShader: `
       #include <common>
@@ -389,57 +460,72 @@ function honeyMaterialLite({ thin, thick, planes, side = THREE.DoubleSide }) {
       void main() {
         #include <clipping_planes_fragment>
         float e = 1.0 - abs(dot(normalize(vN), normalize(vV)));
-        gl_FragColor = vec4(mix(thin, thick, pow(e, 1.4)), 1.0);
+        vec3 c = mix(thick, thin, pow(e, 3.0));
+        float cd; float cm = combAt(cd);
+        c = mix(c, mix(thin, thick, clamp(cd * 1.5, 0.0, 1.0)), cm);
+        gl_FragColor = vec4(c, 1.0);
       }`,
     clipping: true, clippingPlanes: planes || null, side,
     transparent: true, depthWrite: false,
     blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.DstColorFactor, blendDst: THREE.ZeroFactor,
   });
+  m.onBeforeCompile = (sh) => combUniforms(sh, comb);
+  m.customProgramCacheKey = () => 'honeyLite' + (comb ? 'C' : '');
+  return m;
 }
 // Glass: only the reflection is added on top (glass reflects about 4% head-on, much more at grazing angles)
 const glassReflMat = new THREE.MeshPhysicalMaterial({
   color: new THREE.Color(0, 0, 0), roughness: 0.03, metalness: 0, ior: 1.5, specularIntensity: 1,
   envMap: studioEnv, envMapIntensity: 0.9, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
 });
-// ...plus a faint grey-green that thickens at the edges, where you look through more glass
+// ...plus a faint warm tint right at the outline, where you look through more glass (honey-lit, as in the photos)
 const glassTintMat = new THREE.MeshStandardMaterial({
   color: tok('--j3-glass-tint'), roughness: 0.2, metalness: 0, envMapIntensity: 0.3,
-  transparent: true, opacity: 0.02, depthWrite: false, side: THREE.DoubleSide,
+  transparent: true, opacity: 0.0, depthWrite: false, side: THREE.DoubleSide,
 });
 glassTintMat.onBeforeCompile = (sh) => {
   sh.fragmentShader = sh.fragmentShader.replace('#include <alphamap_fragment>',
     `#include <alphamap_fragment>
      { float e = 1.0 - abs( dot( normalize( vNormal ), normalize( vViewPosition ) ) );
-       diffuseColor.a = opacity + 0.65 * pow( e, 2.5 ); }`);
+       diffuseColor.a = opacity + 0.5 * pow( e, 3.0 ); }`);
 };
 // white-painted metal cap (like the product shots): enamel over steel, faint spun texture under a glossy clear coat
 // fine vertical ribs on the cap's upper band (a height map: light = raised), and a whisper of spun texture
 const lidGeo = lidGeometry();
-const ribTex = (() => {
-  const W = 2048, Hh = 256, c = document.createElement('canvas'); c.width = W; c.height = Hh;
+const [ribTex, grooveTex] = (() => {
+  const W = 2048, Hh = 256;
+  const c = document.createElement('canvas'); c.width = W; c.height = Hh;
+  const c2 = document.createElement('canvas'); c2.width = W; c2.height = Hh;
   const g = c.getContext('2d'), img = g.createImageData(W, Hh), d = img.data;
+  const g2 = c2.getContext('2d'), img2 = g2.createImageData(W, Hh), d2 = img2.data;
   const yA = (1 - LID_RIB.v1) * Hh, yB = (1 - LID_RIB.v0) * Hh;          // canvas rows (textures are flipped)
+  const ss = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
   for (let y = 0; y < Hh; y++) {
     const band = Math.min(1, Math.max(0, Math.min(y - yA, yB - y) / 3 + 0.5)); // soft 3px ends
+    const depth = 0.45 + 0.55 * Math.min(1, Math.max(0, (yB - y) / (yB - yA)));   // deepest at the top
     for (let x = 0; x < W; x++) {
       const ph = (x / W) * LID_RIB.count, f = ph - Math.floor(ph);
-      const rib = Math.pow(Math.sin(Math.PI * f), 0.6);                      // rounded ridges, narrow valleys
-      const v = Math.round(255 * (0.5 + band * (rib - 0.6) * 0.8 + (Math.random() - 0.5) * 0.02));
-      const k = (y * W + x) * 4; d[k] = d[k + 1] = d[k + 2] = v; d[k + 3] = 255;
+      const groove = 1 - ss(0.07, 0.17, Math.abs(f - 0.5));               // narrow groove, flat land
+      const k = (y * W + x) * 4;
+      const v = Math.round(255 * (0.55 - band * groove * depth * 0.45 + (Math.random() - 0.5) * 0.01));
+      d[k] = d[k + 1] = d[k + 2] = v; d[k + 3] = 255;
+      const cv = Math.round(255 * (1 - band * groove * depth * 0.3));     // grooves read darker
+      d2[k] = d2[k + 1] = d2[k + 2] = cv; d2[k + 3] = 255;
     }
   }
-  g.putImageData(img, 0, 0);
+  g.putImageData(img, 0, 0); g2.putImageData(img2, 0, 0);
   const t = new THREE.CanvasTexture(c); t.anisotropy = 4;
-  return t;
+  const t2 = new THREE.CanvasTexture(c2); t2.anisotropy = 4; t2.colorSpace = THREE.SRGBColorSpace;
+  return [t, t2];
 })();
 // white enamel over metal: glossy clear coat, cool tone, crisp studio highlights, ribs catching the light
 const lidMat = new THREE.MeshPhysicalMaterial({
-  color: tok('--j3-lid'), metalness: 0.03, roughness: 0.3, bumpMap: ribTex, bumpScale: 1.0,
-  clearcoat: 1.0, clearcoatRoughness: 0.07, envMap: studioEnv, envMapIntensity: 1.0,
+  color: tok('--j3-lid'), map: grooveTex, metalness: 0.03, roughness: 0.3, bumpMap: ribTex, bumpScale: 1.4,
+  clearcoat: 1.0, clearcoatRoughness: 0.06, envMap: studioEnv, envMapIntensity: 1.1,
 });
 
 // lighter versions of the cap and glass for older phones (no clear coat / physical extras)
-const lidMatLite = new THREE.MeshStandardMaterial({ color: tok('--j3-lid'), metalness: 0.03, roughness: 0.22, bumpMap: ribTex, bumpScale: 1.0, envMap: studioEnv, envMapIntensity: 1.0 });
+const lidMatLite = new THREE.MeshStandardMaterial({ color: tok('--j3-lid'), map: grooveTex, metalness: 0.03, roughness: 0.22, bumpMap: ribTex, bumpScale: 1.4, envMap: studioEnv, envMapIntensity: 1.1 });
 const glassReflLite = new THREE.MeshStandardMaterial({
   color: new THREE.Color(0, 0, 0), roughness: 0.04, metalness: 0, envMap: studioEnv, envMapIntensity: 0.9, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false,
 });
@@ -453,9 +539,13 @@ labelTex.colorSpace = THREE.SRGBColorSpace;
 labelTex.anisotropy = 8;
 // front: printed paper, drawn after the glass so the glass doesn't wash it out
 const labelMat = new THREE.MeshStandardMaterial({
-  map: labelTex, transparent: true, alphaTest: 0.03, roughness: 0.6, metalness: 0, envMapIntensity: 0.55,
+  map: labelTex, transparent: true, alphaTest: 0.03, roughness: 0.6, metalness: 0, envMapIntensity: 0.5,
   polygonOffset: true, polygonOffsetFactor: -2,
 });
+labelMat.onBeforeCompile = (sh) => {
+  sh.fragmentShader = sh.fragmentShader.replace('#include <map_fragment>',
+    '#include <map_fragment>\n diffuseColor.rgb = max( mix( vec3( dot( diffuseColor.rgb, vec3( 0.2126, 0.7152, 0.0722 ) ) ), diffuseColor.rgb, 1.5 ), 0.0 );');
+};
 // back: blank paper, solid, so it shows up through the honey when the jar turns
 const labelBackMat = new THREE.MeshStandardMaterial({
   map: labelTex, side: THREE.BackSide, alphaTest: 0.5, roughness: 0.9, metalness: 0, envMapIntensity: 0.6,
@@ -466,10 +556,11 @@ labelBackMat.onBeforeCompile = (sh) => {
 };
 
 // shared geometry
-const HONEY_T0 = 0.02, HONEY_T1 = 0.985;   // a thicker clear glass floor under the honey, as in the photos
+const HONEY_T0 = 0.05, HONEY_T1 = 0.985;   // thick clear glass floor (~7mm) under the honey, as in the photos
 const BASE_DOME = 0.13;                   // push-up: the base rises ~5.5mm into the jar at the centre
 const glassGeo = buildRingSurface(jarRings({ dome: BASE_DOME }), 160);
-const honeyGeo = buildRingSurface(jarRings({ t0: HONEY_T0, t1: HONEY_T1, inset: GLASS_IN, yBottom: HONEY_T0 * H, dome: BASE_DOME }), 160);
+const honeyGeo = buildRingSurface(jarRings({ t0: HONEY_T0, t1: HONEY_T1, inset: GLASS_IN, yBottom: HONEY_T0 * H }), 160);
+const baseGeo = buildRingSurface(jarRings({ t0: 0.004, t1: HONEY_T0 - 0.003, inset: GLASS_IN, yBottom: 0.004 * H, dome: BASE_DOME * 0.97, steps: 6 }), 120);
 const labelGeo = labelGeometry();
 const bubbleGeo = new THREE.SphereGeometry(1, 10, 8);
 const shadowTex = (() => {
@@ -550,7 +641,7 @@ function randomInsidePoint(tMin, tMax, rMin, rMax, frontBias) {
   return new THREE.Vector3(p.x, t * H, p.z);
 }
 
-function makeJar({ att, dist, rough, fill, comb, bubbles, specks, x, rot, lite, shadowTint }) {
+function makeJar({ att, dist, rough, fill, comb, bubbles, specks, x, rot, lite, shadowTint, baseAtt, baseDist }) {
   bubbles = Math.round(bubbles * Q.bubbles); specks = Math.round(specks * Q.bubbles);
   const group = new THREE.Group();
   const body = new THREE.Group();
@@ -561,9 +652,11 @@ function makeJar({ att, dist, rough, fill, comb, bubbles, specks, x, rot, lite, 
 
   // keep-below plane for the honey (world space, updated every frame)
   const clip = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
-  const honey = new THREE.Mesh(honeyGeo, TIER === 'lite' ? honeyMaterialLite({ ...lite, planes: [clip] }) : honeyMaterial({ att, dist, rough, planes: [clip] }));
+  const honey = new THREE.Mesh(honeyGeo, TIER === 'lite' ? honeyMaterialLite({ ...lite, planes: [clip], comb }) : honeyMaterial({ att, dist, rough, planes: [clip], comb }));
   body.add(honey);
-  const surface = new THREE.Mesh(makeSurfaceGeometry(), TIER === 'lite' ? honeyMaterialLite({ ...lite, side: THREE.FrontSide }) : honeyMaterial({ att, dist, rough, side: THREE.FrontSide }));
+  const surface = new THREE.Mesh(makeSurfaceGeometry(), TIER === 'lite' ? honeyMaterialLite({ ...lite, side: THREE.FrontSide, comb }) : honeyMaterial({ att, dist, rough, side: THREE.FrontSide, comb }));
+  const base = new THREE.Mesh(baseGeo, TIER === 'lite' ? honeyMaterialLite({ thin: lite.thin, thick: lite.thin }) : baseGlassMaterial(baseAtt, baseDist));
+  body.add(base);
   surface.frustumCulled = false;
   body.add(surface);
 
@@ -571,10 +664,7 @@ function makeJar({ att, dist, rough, fill, comb, bubbles, specks, x, rot, lite, 
   const combGroup = new THREE.Group(), dots = new THREE.Group();
   innards.add(combGroup, dots);
   if (comb) {
-    const slab = makeComb();
-    slab.position.set(0.0, 0.42 * H_TRACE, -0.07);
-    slab.rotation.set(0.0, 0.05, 0.015);
-    combGroup.add(slab);
+    combGroup.add(makeComb());
   }
   // tiny air bubbles and pollen specks: what makes raw honey read as raw
   const addDots = (count, color, rMin, rMax, rough2, emissive) => {
@@ -583,7 +673,7 @@ function makeJar({ att, dist, rough, fill, comb, bubbles, specks, x, rot, lite, 
     const inst = new THREE.InstancedMesh(bubbleGeo, mat, count);
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3();
     for (let i = 0; i < count; i++) {
-      const p = randomInsidePoint(0.06, fill - 0.05, 0.45, 0.94, 0.65);
+      const p = randomInsidePoint(HONEY_T0 + 0.02, fill - 0.05, 0.45, 0.94, 0.3);
       const r = rMin + (rMax - rMin) * Math.pow(Math.random(), 3);
       m.compose(p, q, s.set(r, r, r)); inst.setMatrixAt(i, m);
     }
@@ -592,14 +682,14 @@ function makeJar({ att, dist, rough, fill, comb, bubbles, specks, x, rot, lite, 
   };
   addDots(specks, tok('--j3-speck'), 0.004, 0.012, 0.7, 0);
   // air bubbles: these move. In thick honey they creep toward whichever way is up, the big ones faster
-  const nBig = comb ? 5 : 4, nBub = bubbles + nBig;
+  const nBig = 2, nBub = bubbles + nBig;
   const bubMesh = new THREE.InstancedMesh(bubbleGeo,
-    new THREE.MeshStandardMaterial({ color: tok('--j3-bubble'), roughness: 0.12, metalness: 0, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 0.25 }), nBub);
+    new THREE.MeshStandardMaterial({ color: tok('--j3-bubble'), roughness: 0.12, metalness: 0, emissive: new THREE.Color(1, 1, 1), emissiveIntensity: 0.08 }), nBub);
   bubMesh.frustumCulled = false; dots.add(bubMesh);
   const bub = { mesh: bubMesh, n: nBub, pos: new Float32Array(nBub * 3), r: new Float32Array(nBub) };
   for (let i = 0; i < nBub; i++) {
-    const p = randomInsidePoint(0.06, fill - 0.05, 0.3, 0.92, 0.6);
-    bub.r[i] = i >= bubbles ? 0.035 + 0.04 * Math.random() : 0.006 + 0.024 * Math.pow(Math.random(), 3);
+    const p = randomInsidePoint(HONEY_T0 + 0.02, fill - 0.05, 0.3, 0.92, 0.25);
+    bub.r[i] = i >= bubbles ? 0.025 + 0.02 * Math.random() : 0.005 + 0.016 * Math.pow(Math.random(), 3);
     bub.pos.set([p.x, p.y, p.z], i * 3);
   }
 
@@ -617,7 +707,7 @@ function makeJar({ att, dist, rough, fill, comb, bubbles, specks, x, rot, lite, 
   group.traverse(o => o.userData.jarGroup = group);
   scene.add(group);
   return {
-    group, body, innards, combGroup, dots, bub, honey, surface, clip, label, labelBack, shadow, shadowCore, fill, lid, glass, lite,
+    group, body, innards, combGroup, dots, bub, honey, surface, base, clip, label, labelBack, shadow, shadowCore, fill, lid, glass, lite, hasComb: comb,
     home: { x, rot }, x, y: 0, vx: 0, vy: 0, rot, vr: 0, px: x, prot: rot,
     velS: 0, prevVelS: 0, wS: 0, prevWS: 0, lean: 0,
     sx: 0, sz: 0, svx: 0, svz: 0, honeyRot: rot,
@@ -628,10 +718,10 @@ function makeJar({ att, dist, rough, fill, comb, bubbles, specks, x, rot, lite, 
 
 // "spring flow" (light, with comb) and "fall flow" (dark), matching the site's two jars
 const jars = [
-  makeJar({ att: tok('--j3-honey-spring'), dist: 0.55, rough: 0.1, fill: yT(0.87), comb: true, bubbles: 70, specks: 40, x: -1.2, rot: -0.1,
-    lite: { thin: [0.86, 0.5, 0.26], thick: [0.7, 0.33, 0.14] }, shadowTint: tok('--j3-shadow-core-spring') }),
-  makeJar({ att: tok('--j3-honey-fall'), dist: 0.74, rough: 0.06, fill: yT(0.87), comb: false, bubbles: 22, specks: 15, x: 1.2, rot: 0.1,
-    lite: { thin: [0.55, 0.26, 0.22], thick: [0.44, 0.18, 0.15] }, shadowTint: tok('--j3-shadow-core-fall') }),
+  makeJar({ att: tok('--j3-honey-spring'), dist: 0.72, rough: 0.1, fill: yT(0.912), comb: true, bubbles: 30, specks: 18, x: -1.2, rot: 0,
+    lite: { thin: [0.92, 0.72, 0.5], thick: [0.84, 0.4, 0.1] }, shadowTint: tok('--j3-shadow-core-spring'), baseAtt: tok('--j3-base-spring'), baseDist: 0.2 }),
+  makeJar({ att: tok('--j3-honey-fall'), dist: 1.35, rough: 0.06, fill: yT(0.912), comb: false, bubbles: 10, specks: 8, x: 1.2, rot: 0,
+    lite: { thin: [0.82, 0.62, 0.48], thick: [0.36, 0.12, 0.08] }, shadowTint: tok('--j3-shadow-core-fall'), baseAtt: tok('--j3-base-fall'), baseDist: 0.32 }),
 ];
 jars[0].name = 'Shop spring flow'; jars[0].href = '#spring'; jars[0].introDelay = 350; jars[0].bobDur = 6.2; jars[0].bobDel = -1.5;
 jars[1].name = 'Shop fall flow';   jars[1].href = '#fall';   jars[1].introDelay = 500; jars[1].bobDur = 7.4; jars[1].bobDel = -4.0;
@@ -803,7 +893,7 @@ function layoutScene() {
 
   // straight-on camera a touch above the jars (lid top just visible, verticals stay vertical),
   // lens-shifted so the jars land exactly where the photos sit
-  const yEye = dist * Math.tan(THREE.MathUtils.degToRad(3.5));
+  const yEye = dist * Math.tan(THREE.MathUtils.degToRad(5));
   camera.aspect = W / Hh;
   camera.position.set(0, yEye, dist);
   camera.rotation.set(0, 0, 0);
@@ -877,7 +967,7 @@ function eulerRHS(wB, tB, out) {
 }
 function addWorldSpin(j, x, y, z) { j.wB.add(_ax.set(x, y, z).applyQuaternion(_qi.copy(j.q).invert())); }
 // resting pose: upright, label front, with a slow sway so the glass keeps catching light
-function homeQuat(j, t) { return _qh.setFromEuler(_eul.set(0, j.home.rot + 0.08 * Math.sin(t / 2600 + j.phase), 0)); }
+function homeQuat(j, t) { return _qh.setFromEuler(_eul.set(0, j.home.rot + 0.05 * Math.sin(t / 2600 + j.phase), 0)); }
 
 function rbStep(j, h, homing, homeQ, B, now) {
   _qi.copy(j.q).invert();
@@ -1001,7 +1091,7 @@ function honeyUpdate(j, dt) {
   for (let i = 0; i < Bb.n; i++) {
     const k = i * 3, r = R[i], sp = Math.min(0.3, 0.012 + 45 * r * r) * dt;
     let x = P[k] + _upB.x * sp, y = P[k + 1] + _upB.y * sp, z = P[k + 2] + _upB.z * sp;
-    const t = clamp(y / H, HONEY_T0 + (BASE_DOME + r + 0.01) / H, HONEY_T1 - 0.01); y = t * H;
+    const t = clamp(y / H, HONEY_T0 + (r + 0.01) / H, HONEY_T1 - 0.01); y = t * H;
     const { hw, hd, n } = section(t);
     const a = Math.max(0.05, hw * GLASS_IN - r - 0.012), b = Math.max(0.05, hd * GLASS_IN - r - 0.012);
     const rho = Math.pow(Math.pow(Math.abs(x / a), n) + Math.pow(Math.abs(z / b), n), 1 / n);
@@ -1022,7 +1112,7 @@ function honeyUpdate(j, dt) {
   j.cV.y += ((cty - j.cOff.y) * 7 - j.cV.y * 6) * dt;
   j.cV.z += ((ctz - j.cOff.z) * 7 - j.cV.z * 6) * dt;
   j.cOff.addScaledVector(j.cV, dt);
-  _qSw.copy(_qId).slerp(_qe, 0.2);                                        // a fifth of the honey's twist lag
+  _qSw.copy(_qId).slerp(_qe, 0.12);                                       // a little of the honey's twist lag
   _dq.setFromEuler(_eulC.set(j.cOff.z * 1.4, 0, -j.cOff.x * 1.4));        // and a few degrees of lean with the drift
   j.combGroup.quaternion.copy(_qSw).multiply(_dq);
   j.combGroup.position.copy(_wm).sub(_al.copy(_wm).applyQuaternion(j.combGroup.quaternion)).add(j.cOff);
@@ -1286,8 +1376,9 @@ function stepDown(to, reason) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, Q.dpr));
   for (const j of jars) {
     j.honey.material.dispose(); j.surface.material.dispose();
-    j.honey.material = honeyMaterialLite({ ...j.lite, planes: [j.clip] });
-    j.surface.material = honeyMaterialLite({ ...j.lite, side: THREE.FrontSide });
+    j.honey.material = honeyMaterialLite({ ...j.lite, planes: [j.clip], comb: j.hasComb });
+    j.surface.material = honeyMaterialLite({ ...j.lite, side: THREE.FrontSide, comb: j.hasComb });
+    j.base.material.dispose(); j.base.material = honeyMaterialLite({ thin: j.lite.thin, thick: j.lite.thin });
     j.lid.material = lidMatLite; j.glass.material = glassReflLite;
     j.bub.n = Math.max(6, Math.round(j.bub.n * 0.5)); j.bub.mesh.count = j.bub.n;
   }
